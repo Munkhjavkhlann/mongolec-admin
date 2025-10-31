@@ -1,9 +1,10 @@
 export interface MerchProduct {
   id: string
-  name: string
+  name: string | { en: string; mn: string }
   slug: string
   sku: string
-  description?: string
+  description?: string | { en: string; mn: string }
+  shortDescription?: string | { en: string; mn: string }
   price: number
   compareAtPrice?: number
   currency: string
@@ -15,8 +16,23 @@ export interface MerchProduct {
   trackInventory: boolean
   minStock?: number
   isFeatured: boolean
+  hasVariants?: boolean
+  options?: any[]
+  variants?: MerchVariant[]
   createdAt: string
   updatedAt: string
+}
+
+export interface MerchVariant {
+  id: string
+  sku: string
+  title?: string
+  price: number
+  compareAtPrice?: number
+  inventory: number
+  image?: string
+  isAvailable: boolean
+  optionValues?: any[]
 }
 
 export interface MerchCategory {

@@ -10,10 +10,11 @@ import { NewsHeader, NewsStats, NewsDataTable } from '@/features/news'
 import type { NewsPageSearchParams } from '@/features/news'
 
 interface NewsPageProps {
-  searchParams: NewsPageSearchParams
+  searchParams: Promise<NewsPageSearchParams>
 }
 
-export default function NewsPage({ searchParams }: NewsPageProps) {
+export default async function NewsPage({ searchParams }: NewsPageProps) {
+  const params = await searchParams
   return (
     <div className="space-y-6">
       <NewsHeader />
@@ -31,7 +32,7 @@ export default function NewsPage({ searchParams }: NewsPageProps) {
         </CardHeader>
         <CardContent>
           <Suspense fallback={<div>Loading articles...</div>}>
-            <NewsDataTable searchParams={searchParams} />
+            <NewsDataTable searchParams={Promise.resolve(params)} />
           </Suspense>
         </CardContent>
       </Card>

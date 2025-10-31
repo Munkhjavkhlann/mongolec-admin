@@ -12,13 +12,13 @@ import { UserAuthForm } from '@/features/auth/components/user-auth-form-new'
 import Link from 'next/link'
 
 interface SignInPageProps {
-  searchParams: {
+  searchParams: Promise<{
     redirect?: string
-  }
+  }>
 }
 
-export default function SignInPage({ searchParams }: SignInPageProps) {
-  const { redirect } = searchParams
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const { redirect } = await searchParams
 
   return (
     <AuthLayout>

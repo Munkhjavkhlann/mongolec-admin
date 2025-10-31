@@ -17,6 +17,7 @@ import {
   Command,
   GalleryVerticalEnd,
   AudioWaveform,
+  Building2,
 } from "lucide-react";
 import { type SidebarData } from "../types";
 
@@ -61,6 +62,11 @@ export const sidebarData: SidebarData = {
           title: "Merchandise",
           url: "/merch",
           icon: ShoppingBag,
+        },
+        {
+          title: "Tenants",
+          url: "/tenants",
+          icon: Building2,
         },
         {
           title: "Users",

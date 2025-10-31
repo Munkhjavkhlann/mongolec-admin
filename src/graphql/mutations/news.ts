@@ -23,12 +23,6 @@ export const CREATE_NEWS_ARTICLE = gql`
       keywords
       publishedAt
       scheduledAt
-      author {
-        id
-        email
-        firstName
-        lastName
-      }
       category {
         id
         name
@@ -66,12 +60,6 @@ export const UPDATE_NEWS_ARTICLE = gql`
       keywords
       publishedAt
       scheduledAt
-      author {
-        id
-        email
-        firstName
-        lastName
-      }
       category {
         id
         name

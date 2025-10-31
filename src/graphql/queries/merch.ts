@@ -37,8 +37,25 @@ export const GET_MERCH_PRODUCTS = gql`
       images
       tags
       hasVariants
-      variants
       options
+      variants {
+        id
+        sku
+        barcode
+        title
+        optionValues
+        price
+        compareAtPrice
+        costPrice
+        inventory
+        weight
+        dimensions
+        image
+        position
+        isAvailable
+        createdAt
+        updatedAt
+      }
       metaTitle
       metaDescription
       searchKeywords
@@ -81,8 +98,25 @@ export const GET_MERCH_PRODUCT_BY_ID = gql`
       images
       tags
       hasVariants
-      variants
       options
+      variants {
+        id
+        sku
+        barcode
+        title
+        optionValues
+        price
+        compareAtPrice
+        costPrice
+        inventory
+        weight
+        dimensions
+        image
+        position
+        isAvailable
+        createdAt
+        updatedAt
+      }
       metaTitle
       metaDescription
       searchKeywords

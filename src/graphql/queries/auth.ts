@@ -13,17 +13,3 @@ export const GET_ME = gql`
     }
   }
 `
-
-export const GET_TENANTS = gql`
-  query GetTenants {
-    tenants {
-      id
-      name
-      slug
-      domain
-      isActive
-      createdAt
-      updatedAt
-    }
-  }
-`

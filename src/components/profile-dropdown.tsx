@@ -1,10 +1,11 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState } from "react";
+import Link from "next/link";
+import { useMutation } from "@apollo/client/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -22,101 +23,91 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { useRouter } from 'next/navigation'
+} from "@/components/ui/dialog";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/auth-store";
+import { LOGOUT } from "@/graphql/mutations/auth";
 
 function getUserInitials(firstName?: string, lastName?: string): string {
-  if (!firstName && !lastName) return 'U'
+  if (!firstName && !lastName) return "U";
 
-  const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : ''
-  const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : ''
+  const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
+  const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : "";
 
-  return `${firstInitial}${lastInitial}` || 'U'
-}
-
-interface User {
-  firstName?: string
-  lastName?: string
-  email?: string
-  profileImage?: string
-  isActive?: boolean
-  tenant?: {
-    name: string
-  }
+  return `${firstInitial}${lastInitial}` || "U";
 }
 
 export function ProfileDropdown() {
-  const router = useRouter()
-  const [signOutOpen, setSignOutOpen] = useState(false)
+  const router = useRouter();
+  const [signOutOpen, setSignOutOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+  const [logoutMutation] = useMutation(LOGOUT);
 
-  // TODO: Get actual user from auth context or session
-  const user: User = {
-    firstName: 'Admin',
-    lastName: 'User',
-    email: 'admin@mongolec.com',
-    isActive: true,
-  }
-
-  const userInitials = getUserInitials(user?.firstName, user?.lastName)
-  const fullName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Loading...'
+  const userInitials = getUserInitials(user?.firstName, user?.lastName);
+  const fullName = user
+    ? `${user.firstName} ${user.lastName}`.trim()
+    : "Loading...";
 
   const handleSignOut = async () => {
-    // TODO: Implement sign out logic
-    router.push('/login')
-  }
+    try {
+      // Call logout mutation to clear httpOnly cookie on backend
+      await logoutMutation();
+      console.log("Logout mutation called successfully");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Close dialog
+      setSignOutOpen(false);
+      // Clear user state and redirect
+      await logout();
+    }
+  };
 
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button variant='ghost' className='relative h-8 w-8 rounded-full'>
-            <Avatar className='h-8 w-8'>
-              <AvatarImage src={user?.profileImage || '/avatars/default.png'} alt={fullName} />
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={"/avatars/default.png"} alt={fullName} />
               <AvatarFallback className="text-xs font-medium">
                 {userInitials}
               </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className='w-64' align='end' forceMount>
-          <DropdownMenuLabel className='font-normal'>
-            <div className='flex flex-col gap-1.5'>
+        <DropdownMenuContent className="w-64" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <p className='text-sm leading-none font-medium'>{fullName}</p>
+                <p className="text-sm leading-none font-medium">{fullName}</p>
                 {user?.isActive && (
                   <Badge variant="secondary" className="text-xs px-2 py-0.5">
                     Active
                   </Badge>
                 )}
               </div>
-              <p className='text-muted-foreground text-xs leading-none'>
-                {user?.email || 'No email'}
+              <p className="text-muted-foreground text-xs leading-none">
+                {user?.email || "No email"}
               </p>
-              {user?.tenant && (
-                <div className="mt-1 flex items-center gap-1">
-                  <Badge variant="outline" className="text-xs px-2 py-0.5">
-                    {user.tenant.name}
-                  </Badge>
-                </div>
-              )}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
-              <Link href='/settings'>
+              <Link href="/settings">
                 Profile
                 <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href='/settings'>
+              <Link href="/settings">
                 Account Settings
                 <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href='/settings'>
+              <Link href="/settings">
                 Settings
                 <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
               </Link>
@@ -135,7 +126,8 @@ export function ProfileDropdown() {
           <DialogHeader>
             <DialogTitle>Sign out</DialogTitle>
             <DialogDescription>
-              Are you sure you want to sign out? You will need to sign in again to access your account.
+              Are you sure you want to sign out? You will need to sign in again
+              to access your account.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -149,5 +141,5 @@ export function ProfileDropdown() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

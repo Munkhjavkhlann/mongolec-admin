@@ -23,8 +23,25 @@ export const CREATE_MERCH_PRODUCT = gql`
       images
       tags
       hasVariants
-      variants
       options
+      variants {
+        id
+        sku
+        barcode
+        title
+        optionValues
+        price
+        compareAtPrice
+        costPrice
+        inventory
+        weight
+        dimensions
+        image
+        position
+        isAvailable
+        createdAt
+        updatedAt
+      }
       metaTitle
       metaDescription
       searchKeywords
@@ -67,8 +84,25 @@ export const UPDATE_MERCH_PRODUCT = gql`
       images
       tags
       hasVariants
-      variants
       options
+      variants {
+        id
+        sku
+        barcode
+        title
+        optionValues
+        price
+        compareAtPrice
+        costPrice
+        inventory
+        weight
+        dimensions
+        image
+        position
+        isAvailable
+        createdAt
+        updatedAt
+      }
       metaTitle
       metaDescription
       searchKeywords
@@ -123,5 +157,14 @@ export const UPDATE_MERCH_CATEGORY = gql`
 export const DELETE_MERCH_CATEGORY = gql`
   mutation DeleteMerchCategory($id: ID!) {
     deleteMerchCategory(id: $id)
+  }
+`
+
+export const CREATE_PRESIGNED_UPLOAD_URL = gql`
+  mutation CreatePresignedUploadUrl($fileType: String!) {
+    createPresignedUploadUrl(fileType: $fileType) {
+      uploadUrl
+      fileUrl
+    }
   }
 `

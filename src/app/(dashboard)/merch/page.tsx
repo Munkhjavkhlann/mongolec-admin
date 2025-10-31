@@ -1,77 +1,47 @@
-import { Suspense } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
-import { Plus, Package } from 'lucide-react'
-import Link from 'next/link'
-import { MerchProductsTable } from '@/features/merch/components/merch-products-table'
-import type { MerchProduct } from '@/features/merch/types'
+"use client";
 
-interface MerchPageProps {
-  searchParams: {
-    tab?: string
-    page?: string
-    limit?: string
-    search?: string
-    category?: string
-    status?: string
-  }
+import { useQuery } from "@apollo/client/react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Plus, Package, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { MerchProductsTable } from "@/features/merch/components/merch-products-table";
+import { GET_MERCH_PRODUCTS } from "@/graphql/queries/merch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+
+interface GetMerchProductsData {
+  merchProducts: any[];
 }
 
-// Mock data - replace with actual API call
-const mockProducts: MerchProduct[] = [
-  {
-    id: '1',
-    name: 'T-Shirt Classic',
-    slug: 't-shirt-classic',
-    sku: 'TS-001',
-    description: 'Classic cotton t-shirt',
-    price: 29.99,
-    compareAtPrice: 39.99,
-    currency: 'USD',
-    status: 'ACTIVE',
-    featuredImage: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400',
-    inventory: 150,
-    trackInventory: true,
-    minStock: 20,
-    isFeatured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Hoodie Premium',
-    slug: 'hoodie-premium',
-    sku: 'HD-002',
-    price: 59.99,
-    currency: 'USD',
-    status: 'ACTIVE',
-    inventory: 75,
-    trackInventory: true,
-    minStock: 10,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Cap Vintage',
-    slug: 'cap-vintage',
-    sku: 'CAP-003',
-    price: 24.99,
-    currency: 'USD',
-    status: 'OUT_OF_STOCK',
-    inventory: 0,
-    trackInventory: true,
-    minStock: 15,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-]
+export default function MerchPage() {
+  const { data, loading, error } = useQuery<GetMerchProductsData>(GET_MERCH_PRODUCTS, {
+    variables: {
+      language: "en",
+      limit: 100,
+      offset: 0,
+    },
+  });
 
-export default function MerchPage({ searchParams }: MerchPageProps) {
-  const activeTab = searchParams.tab || 'products'
+  const products = data?.merchProducts || [];
+
+  // Calculate stats
+  const stats = {
+    total: products.length,
+    active: products.filter((p: any) => p.status === "ACTIVE").length,
+    featured: products.filter((p: any) => p.isFeatured).length,
+    totalInventory: products.reduce(
+      (sum: number, p: any) => sum + (p.inventory || 0),
+      0
+    ),
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -103,25 +73,41 @@ export default function MerchPage({ searchParams }: MerchPageProps) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Products
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              0 active products
-            </p>
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.total}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.active} active products
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Featured Products</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Featured Products
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Featured on homepage
-            </p>
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.featured}</div>
+                <p className="text-xs text-muted-foreground">
+                  Featured on homepage
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -130,28 +116,58 @@ export default function MerchPage({ searchParams }: MerchPageProps) {
             <CardTitle className="text-sm font-medium">Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Product categories
-            </p>
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {
+                    new Set(
+                      products
+                        .filter((p: any) => p.category)
+                        .map((p: any) => p.category.id)
+                    ).size
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Product categories
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Inventory</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Total Inventory
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">
-              Items in stock
-            </p>
+            {loading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats.totalInventory}</div>
+                <p className="text-xs text-muted-foreground">Items in stock</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Failed to load products: {error.message}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Main Content Tabs */}
-      <Tabs value={activeTab} className="space-y-4">
+      <Tabs defaultValue="products" className="space-y-4">
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="products">Products</TabsTrigger>
@@ -160,7 +176,20 @@ export default function MerchPage({ searchParams }: MerchPageProps) {
         </div>
 
         <TabsContent value="products" className="space-y-4">
-          <MerchProductsTable products={mockProducts} />
+          {loading ? (
+            <Card>
+              <CardContent className="py-8">
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-muted-foreground">
+                    Loading products...
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <MerchProductsTable products={products} />
+          )}
         </TabsContent>
 
         <TabsContent value="categories" className="space-y-4">
@@ -173,12 +202,14 @@ export default function MerchPage({ searchParams }: MerchPageProps) {
             </CardHeader>
             <CardContent>
               <div className="text-center py-8">
-                <p className="text-muted-foreground">Server-side datatable will be implemented here</p>
+                <p className="text-muted-foreground">
+                  Server-side datatable will be implemented here
+                </p>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

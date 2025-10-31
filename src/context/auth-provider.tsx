@@ -53,9 +53,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     if (userData?.me) {
       setUser(userData.me);
-    } else if (error && !loading) {
-      // If there's an error and we're not loading, user is not authenticated
-      console.log("Failed to fetch user data:", error);
+    } else if (!loading) {
+      // If query completed and no user data, user is not authenticated
       clearUser();
 
       // Redirect to sign-in if not already on an auth page
@@ -71,7 +70,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         router.push(redirectUrl);
       }
     }
-  }, [userData, error, loading, setUser, clearUser, router, pathname]);
+  }, [userData, loading, setUser, clearUser, router, pathname]);
 
   return (
     <AuthContext.Provider value={{ isLoading, isAuthenticated }}>

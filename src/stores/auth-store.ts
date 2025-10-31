@@ -50,32 +50,12 @@ export const useAuthStore = create<AuthStore>()(
         }),
 
       logout: async () => {
-        try {
-          // Call GraphQL logout mutation to clear httpOnly cookie
-          const response = await fetch('http://localhost:4000/graphql', {
-            method: 'POST',
-            credentials: 'include', // Include cookies
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              query: 'mutation Logout { logout { success message } }'
-            }),
-          })
+        // Clear user state and redirect
+        // The actual logout mutation will be called from the component
+        get().clearUser()
 
-          const result = await response.json()
-          if (result.data?.logout?.success) {
-            console.log('Logged out successfully')
-          }
-        } catch (error) {
-          console.error('Logout error:', error)
-        } finally {
-          // Clear user state regardless of backend response
-          get().clearUser()
-
-          // Redirect to sign-in
-          window.location.href = '/sign-in'
-        }
+        // Redirect to sign-in
+        window.location.href = '/sign-in'
       },
     }),
     {

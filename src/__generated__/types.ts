@@ -78,11 +78,11 @@ export type CreateMerchProductInput = {
   publishedAt?: InputMaybe<Scalars['DateTime']['input']>;
   searchKeywords?: InputMaybe<Scalars['JSON']['input']>;
   shortDescription?: InputMaybe<Scalars['JSON']['input']>;
-  sku: Scalars['String']['input'];
+  sku?: InputMaybe<Scalars['String']['input']>;
   status: Scalars['String']['input'];
   tags?: InputMaybe<Scalars['JSON']['input']>;
   trackInventory?: InputMaybe<Scalars['Boolean']['input']>;
-  variants?: InputMaybe<Scalars['JSON']['input']>;
+  variants?: InputMaybe<Array<CreateVariantInput>>;
   weight?: InputMaybe<Scalars['Float']['input']>;
 };
 
@@ -116,6 +116,31 @@ export type CreateNewsCategoryInput = {
   slug: Scalars['String']['input'];
 };
 
+export type CreateTenantInput = {
+  domain?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
+  plan?: InputMaybe<TenantPlan>;
+  slug: Scalars['String']['input'];
+  status?: InputMaybe<TenantStatus>;
+};
+
+export type CreateVariantInput = {
+  barcode?: InputMaybe<Scalars['String']['input']>;
+  compareAtPrice?: InputMaybe<Scalars['Float']['input']>;
+  costPrice?: InputMaybe<Scalars['Float']['input']>;
+  dimensions?: InputMaybe<Scalars['JSON']['input']>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  inventory?: InputMaybe<Scalars['Int']['input']>;
+  isAvailable?: InputMaybe<Scalars['Boolean']['input']>;
+  optionValues: Scalars['JSON']['input'];
+  position?: InputMaybe<Scalars['Int']['input']>;
+  price: Scalars['Float']['input'];
+  sku: Scalars['String']['input'];
+  title?: InputMaybe<Scalars['JSON']['input']>;
+  weight?: InputMaybe<Scalars['Float']['input']>;
+};
+
 export type Health = {
   __typename?: 'Health';
   status: Scalars['String']['output'];
@@ -147,7 +172,7 @@ export type MerchProduct = {
   description?: Maybe<Scalars['JSON']['output']>;
   dimensions?: Maybe<Scalars['JSON']['output']>;
   featuredImage?: Maybe<Scalars['String']['output']>;
-  hasVariants?: Maybe<Scalars['Boolean']['output']>;
+  hasVariants: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   images?: Maybe<Scalars['JSON']['output']>;
   inventory: Scalars['Int']['output'];
@@ -163,35 +188,66 @@ export type MerchProduct = {
   publishedAt?: Maybe<Scalars['DateTime']['output']>;
   searchKeywords?: Maybe<Scalars['JSON']['output']>;
   shortDescription?: Maybe<Scalars['JSON']['output']>;
-  sku: Scalars['String']['output'];
+  sku?: Maybe<Scalars['String']['output']>;
   status: Scalars['String']['output'];
   tags?: Maybe<Scalars['JSON']['output']>;
   trackInventory: Scalars['Boolean']['output'];
   updatedAt: Scalars['DateTime']['output'];
-  variants?: Maybe<Scalars['JSON']['output']>;
+  variants?: Maybe<Array<MerchVariant>>;
+  weight?: Maybe<Scalars['Float']['output']>;
+};
+
+export type MerchVariant = {
+  __typename?: 'MerchVariant';
+  barcode?: Maybe<Scalars['String']['output']>;
+  compareAtPrice?: Maybe<Scalars['Float']['output']>;
+  costPrice?: Maybe<Scalars['Float']['output']>;
+  createdAt: Scalars['DateTime']['output'];
+  dimensions?: Maybe<Scalars['JSON']['output']>;
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  inventory: Scalars['Int']['output'];
+  isAvailable: Scalars['Boolean']['output'];
+  optionValues: Scalars['JSON']['output'];
+  position: Scalars['Int']['output'];
+  price: Scalars['Float']['output'];
+  product?: Maybe<MerchProduct>;
+  productId: Scalars['ID']['output'];
+  sku: Scalars['String']['output'];
+  title?: Maybe<Scalars['JSON']['output']>;
+  updatedAt: Scalars['DateTime']['output'];
   weight?: Maybe<Scalars['Float']['output']>;
 };
 
 export type Mutation = {
   __typename?: 'Mutation';
+  _empty?: Maybe<Scalars['String']['output']>;
   createContent: Content;
   createMerchCategory: MerchCategory;
   createMerchProduct: MerchProduct;
+  createMerchVariant: MerchVariant;
   createNewsArticle: NewsArticle;
   createNewsCategory: NewsCategory;
+  /** Creates a pre-signed URL for a file upload. */
+  createPresignedUploadUrl: PresignedUrl;
+  createTenant: Tenant;
   deleteContent: Scalars['Boolean']['output'];
   deleteMerchCategory: Scalars['Boolean']['output'];
   deleteMerchProduct: Scalars['Boolean']['output'];
+  deleteMerchVariant: Scalars['Boolean']['output'];
   deleteNewsArticle: Scalars['Boolean']['output'];
   deleteNewsCategory: Scalars['Boolean']['output'];
+  deleteTenant: Scalars['Boolean']['output'];
   login: AuthPayload;
   logout: Scalars['Boolean']['output'];
   register: AuthPayload;
   updateContent: Content;
   updateMerchCategory: MerchCategory;
   updateMerchProduct: MerchProduct;
+  updateMerchVariant: MerchVariant;
   updateNewsArticle: NewsArticle;
   updateNewsCategory: NewsCategory;
+  updateTenant: Tenant;
 };
 
 
@@ -210,6 +266,12 @@ export type MutationCreateMerchProductArgs = {
 };
 
 
+export type MutationCreateMerchVariantArgs = {
+  input: CreateVariantInput;
+  productId: Scalars['ID']['input'];
+};
+
+
 export type MutationCreateNewsArticleArgs = {
   input: CreateNewsArticleInput;
 };
@@ -217,6 +279,16 @@ export type MutationCreateNewsArticleArgs = {
 
 export type MutationCreateNewsCategoryArgs = {
   input: CreateNewsCategoryInput;
+};
+
+
+export type MutationCreatePresignedUploadUrlArgs = {
+  fileType: Scalars['String']['input'];
+};
+
+
+export type MutationCreateTenantArgs = {
+  input: CreateTenantInput;
 };
 
 
@@ -235,12 +307,22 @@ export type MutationDeleteMerchProductArgs = {
 };
 
 
+export type MutationDeleteMerchVariantArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
 export type MutationDeleteNewsArticleArgs = {
   id: Scalars['ID']['input'];
 };
 
 
 export type MutationDeleteNewsCategoryArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTenantArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -278,6 +360,12 @@ export type MutationUpdateMerchProductArgs = {
 };
 
 
+export type MutationUpdateMerchVariantArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateVariantInput;
+};
+
+
 export type MutationUpdateNewsArticleArgs = {
   id: Scalars['ID']['input'];
   input: UpdateNewsArticleInput;
@@ -287,6 +375,12 @@ export type MutationUpdateNewsArticleArgs = {
 export type MutationUpdateNewsCategoryArgs = {
   id: Scalars['ID']['input'];
   input: UpdateNewsCategoryInput;
+};
+
+
+export type MutationUpdateTenantArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateTenantInput;
 };
 
 export type NewsArticle = {
@@ -330,6 +424,15 @@ export type NewsCategory = {
   updatedAt: Scalars['DateTime']['output'];
 };
 
+/** Response object for a pre-signed URL request. */
+export type PresignedUrl = {
+  __typename?: 'PresignedUrl';
+  /** The final public URL of the file after upload. */
+  fileUrl: Scalars['String']['output'];
+  /** The URL to use for uploading the file. */
+  uploadUrl: Scalars['String']['output'];
+};
+
 export type Query = {
   __typename?: 'Query';
   content: Array<Content>;
@@ -345,6 +448,8 @@ export type Query = {
   newsArticles: Array<NewsArticle>;
   newsCategories: Array<NewsCategory>;
   newsCategoryById?: Maybe<NewsCategory>;
+  tenantById?: Maybe<Tenant>;
+  tenantBySlug?: Maybe<Tenant>;
   tenants: Array<Tenant>;
 };
 
@@ -407,6 +512,16 @@ export type QueryNewsCategoryByIdArgs = {
   language?: InputMaybe<Scalars['String']['input']>;
 };
 
+
+export type QueryTenantByIdArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTenantBySlugArgs = {
+  slug: Scalars['String']['input'];
+};
+
 export type Tenant = {
   __typename?: 'Tenant';
   createdAt: Scalars['DateTime']['output'];
@@ -414,9 +529,26 @@ export type Tenant = {
   id: Scalars['ID']['output'];
   isActive: Scalars['Boolean']['output'];
   name: Scalars['String']['output'];
+  plan: TenantPlan;
   slug: Scalars['String']['output'];
+  status: TenantStatus;
   updatedAt: Scalars['DateTime']['output'];
 };
+
+export enum TenantPlan {
+  Basic = 'BASIC',
+  Enterprise = 'ENTERPRISE',
+  Free = 'FREE',
+  Pro = 'PRO'
+}
+
+export enum TenantStatus {
+  Active = 'ACTIVE',
+  Archived = 'ARCHIVED',
+  Inactive = 'INACTIVE',
+  Pending = 'PENDING',
+  Suspended = 'SUSPENDED'
+}
 
 export type UpdateContentInput = {
   content?: InputMaybe<Scalars['String']['input']>;
@@ -459,7 +591,7 @@ export type UpdateMerchProductInput = {
   status?: InputMaybe<Scalars['String']['input']>;
   tags?: InputMaybe<Scalars['JSON']['input']>;
   trackInventory?: InputMaybe<Scalars['Boolean']['input']>;
-  variants?: InputMaybe<Scalars['JSON']['input']>;
+  variants?: InputMaybe<Array<CreateVariantInput>>;
   weight?: InputMaybe<Scalars['Float']['input']>;
 };
 
@@ -493,6 +625,31 @@ export type UpdateNewsCategoryInput = {
   slug?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateTenantInput = {
+  domain?: InputMaybe<Scalars['String']['input']>;
+  isActive?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
+  plan?: InputMaybe<TenantPlan>;
+  slug?: InputMaybe<Scalars['String']['input']>;
+  status?: InputMaybe<TenantStatus>;
+};
+
+export type UpdateVariantInput = {
+  barcode?: InputMaybe<Scalars['String']['input']>;
+  compareAtPrice?: InputMaybe<Scalars['Float']['input']>;
+  costPrice?: InputMaybe<Scalars['Float']['input']>;
+  dimensions?: InputMaybe<Scalars['JSON']['input']>;
+  image?: InputMaybe<Scalars['String']['input']>;
+  inventory?: InputMaybe<Scalars['Int']['input']>;
+  isAvailable?: InputMaybe<Scalars['Boolean']['input']>;
+  optionValues?: InputMaybe<Scalars['JSON']['input']>;
+  position?: InputMaybe<Scalars['Int']['input']>;
+  price?: InputMaybe<Scalars['Float']['input']>;
+  sku?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['JSON']['input']>;
+  weight?: InputMaybe<Scalars['Float']['input']>;
+};
+
 export type User = {
   __typename?: 'User';
   createdAt: Scalars['DateTime']['output'];
@@ -502,6 +659,11 @@ export type User = {
   isActive: Scalars['Boolean']['output'];
   lastName: Scalars['String']['output'];
   updatedAt: Scalars['DateTime']['output'];
+};
+
+export type VariantOptionInput = {
+  name: Scalars['JSON']['input'];
+  values: Array<Scalars['JSON']['input']>;
 };
 
 export type LoginMutationVariables = Exact<{
@@ -533,7 +695,7 @@ export type CreateMerchProductMutationVariables = Exact<{
 }>;
 
 
-export type CreateMerchProductMutation = { __typename?: 'Mutation', createMerchProduct: { __typename?: 'MerchProduct', id: string, sku: string, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants?: boolean | null, variants?: any | null, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null } };
+export type CreateMerchProductMutation = { __typename?: 'Mutation', createMerchProduct: { __typename?: 'MerchProduct', id: string, sku?: string | null, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants: boolean, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, variants?: Array<{ __typename?: 'MerchVariant', id: string, sku: string, barcode?: string | null, title?: any | null, optionValues: any, price: number, compareAtPrice?: number | null, costPrice?: number | null, inventory: number, weight?: number | null, dimensions?: any | null, image?: string | null, position: number, isAvailable: boolean, createdAt: any, updatedAt: any }> | null, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null } };
 
 export type UpdateMerchProductMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -541,7 +703,7 @@ export type UpdateMerchProductMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMerchProductMutation = { __typename?: 'Mutation', updateMerchProduct: { __typename?: 'MerchProduct', id: string, sku: string, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants?: boolean | null, variants?: any | null, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null } };
+export type UpdateMerchProductMutation = { __typename?: 'Mutation', updateMerchProduct: { __typename?: 'MerchProduct', id: string, sku?: string | null, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants: boolean, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, variants?: Array<{ __typename?: 'MerchVariant', id: string, sku: string, barcode?: string | null, title?: any | null, optionValues: any, price: number, compareAtPrice?: number | null, costPrice?: number | null, inventory: number, weight?: number | null, dimensions?: any | null, image?: string | null, position: number, isAvailable: boolean, createdAt: any, updatedAt: any }> | null, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null } };
 
 export type DeleteMerchProductMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -572,12 +734,19 @@ export type DeleteMerchCategoryMutationVariables = Exact<{
 
 export type DeleteMerchCategoryMutation = { __typename?: 'Mutation', deleteMerchCategory: boolean };
 
+export type CreatePresignedUploadUrlMutationVariables = Exact<{
+  fileType: Scalars['String']['input'];
+}>;
+
+
+export type CreatePresignedUploadUrlMutation = { __typename?: 'Mutation', createPresignedUploadUrl: { __typename?: 'PresignedUrl', uploadUrl: string, fileUrl: string } };
+
 export type CreateNewsArticleMutationVariables = Exact<{
   input: CreateNewsArticleInput;
 }>;
 
 
-export type CreateNewsArticleMutation = { __typename?: 'Mutation', createNewsArticle: { __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, author: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string }, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null } };
+export type CreateNewsArticleMutation = { __typename?: 'Mutation', createNewsArticle: { __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null } };
 
 export type UpdateNewsArticleMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -585,7 +754,7 @@ export type UpdateNewsArticleMutationVariables = Exact<{
 }>;
 
 
-export type UpdateNewsArticleMutation = { __typename?: 'Mutation', updateNewsArticle: { __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, author: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string }, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null } };
+export type UpdateNewsArticleMutation = { __typename?: 'Mutation', updateNewsArticle: { __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null } };
 
 export type DeleteNewsArticleMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -616,15 +785,32 @@ export type DeleteNewsCategoryMutationVariables = Exact<{
 
 export type DeleteNewsCategoryMutation = { __typename?: 'Mutation', deleteNewsCategory: boolean };
 
+export type CreateTenantMutationVariables = Exact<{
+  input: CreateTenantInput;
+}>;
+
+
+export type CreateTenantMutation = { __typename?: 'Mutation', createTenant: { __typename?: 'Tenant', id: string, name: string, slug: string, domain?: string | null, isActive: boolean, status: TenantStatus, plan: TenantPlan, createdAt: any, updatedAt: any } };
+
+export type UpdateTenantMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateTenantInput;
+}>;
+
+
+export type UpdateTenantMutation = { __typename?: 'Mutation', updateTenant: { __typename?: 'Tenant', id: string, name: string, slug: string, domain?: string | null, isActive: boolean, status: TenantStatus, plan: TenantPlan, createdAt: any, updatedAt: any } };
+
+export type DeleteTenantMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTenantMutation = { __typename?: 'Mutation', deleteTenant: boolean };
+
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetMeQuery = { __typename?: 'Query', me?: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string, isActive: boolean, createdAt: any, updatedAt: any } | null };
-
-export type GetTenantsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetTenantsQuery = { __typename?: 'Query', tenants: Array<{ __typename?: 'Tenant', id: string, name: string, slug: string, domain?: string | null, isActive: boolean, createdAt: any, updatedAt: any }> };
 
 export type GetMerchProductsQueryVariables = Exact<{
   language?: InputMaybe<Scalars['String']['input']>;
@@ -636,7 +822,7 @@ export type GetMerchProductsQueryVariables = Exact<{
 }>;
 
 
-export type GetMerchProductsQuery = { __typename?: 'Query', merchProducts: Array<{ __typename?: 'MerchProduct', id: string, sku: string, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants?: boolean | null, variants?: any | null, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null }> };
+export type GetMerchProductsQuery = { __typename?: 'Query', merchProducts: Array<{ __typename?: 'MerchProduct', id: string, sku?: string | null, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants: boolean, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, variants?: Array<{ __typename?: 'MerchVariant', id: string, sku: string, barcode?: string | null, title?: any | null, optionValues: any, price: number, compareAtPrice?: number | null, costPrice?: number | null, inventory: number, weight?: number | null, dimensions?: any | null, image?: string | null, position: number, isAvailable: boolean, createdAt: any, updatedAt: any }> | null, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null }> };
 
 export type GetMerchProductByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -644,7 +830,7 @@ export type GetMerchProductByIdQueryVariables = Exact<{
 }>;
 
 
-export type GetMerchProductByIdQuery = { __typename?: 'Query', merchProductById?: { __typename?: 'MerchProduct', id: string, sku: string, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants?: boolean | null, variants?: any | null, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null } | null };
+export type GetMerchProductByIdQuery = { __typename?: 'Query', merchProductById?: { __typename?: 'MerchProduct', id: string, sku?: string | null, name: any, description?: any | null, shortDescription?: any | null, price: number, compareAtPrice?: number | null, costPrice?: number | null, currency?: string | null, inventory: number, trackInventory: boolean, allowBackorder?: boolean | null, minStock?: number | null, maxStock?: number | null, weight?: number | null, dimensions?: any | null, featuredImage?: string | null, images?: any | null, tags?: any | null, hasVariants: boolean, options?: any | null, metaTitle?: any | null, metaDescription?: any | null, searchKeywords?: any | null, status: string, isFeatured: boolean, isDigital?: boolean | null, publishedAt?: any | null, createdAt: any, updatedAt: any, variants?: Array<{ __typename?: 'MerchVariant', id: string, sku: string, barcode?: string | null, title?: any | null, optionValues: any, price: number, compareAtPrice?: number | null, costPrice?: number | null, inventory: number, weight?: number | null, dimensions?: any | null, image?: string | null, position: number, isAvailable: boolean, createdAt: any, updatedAt: any }> | null, category?: { __typename?: 'MerchCategory', id: string, name: any, slug: string, description?: any | null } | null } | null };
 
 export type GetMerchCategoriesQueryVariables = Exact<{
   language?: InputMaybe<Scalars['String']['input']>;
@@ -671,7 +857,7 @@ export type GetNewsArticlesQueryVariables = Exact<{
 }>;
 
 
-export type GetNewsArticlesQuery = { __typename?: 'Query', newsArticles: Array<{ __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, author: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string }, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null }> };
+export type GetNewsArticlesQuery = { __typename?: 'Query', newsArticles: Array<{ __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null }> };
 
 export type GetNewsArticleByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -679,7 +865,7 @@ export type GetNewsArticleByIdQueryVariables = Exact<{
 }>;
 
 
-export type GetNewsArticleByIdQuery = { __typename?: 'Query', newsArticleById?: { __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, author: { __typename?: 'User', id: string, email: string, firstName: string, lastName: string }, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null } | null };
+export type GetNewsArticleByIdQuery = { __typename?: 'Query', newsArticleById?: { __typename?: 'NewsArticle', id: string, slug: string, title: any, subtitle?: any | null, excerpt?: any | null, byline?: any | null, blocks: any, featuredImage?: string | null, socialImage?: string | null, location?: any | null, source?: string | null, status: string, priority: string, isBreaking: boolean, isFeatured: boolean, metaTitle?: any | null, metaDescription?: any | null, keywords?: any | null, publishedAt?: any | null, scheduledAt?: any | null, createdAt: any, updatedAt: any, category?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, icon?: string | null } | null } | null };
 
 export type GetNewsCategoriesQueryVariables = Exact<{
   language?: InputMaybe<Scalars['String']['input']>;
@@ -695,3 +881,22 @@ export type GetNewsCategoryByIdQueryVariables = Exact<{
 
 
 export type GetNewsCategoryByIdQuery = { __typename?: 'Query', newsCategoryById?: { __typename?: 'NewsCategory', id: string, name: any, slug: string, description?: any | null, color?: string | null, createdAt: any, updatedAt: any } | null };
+
+export type GetTenantsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetTenantsQuery = { __typename?: 'Query', tenants: Array<{ __typename?: 'Tenant', id: string, name: string, slug: string, domain?: string | null, isActive: boolean, status: TenantStatus, plan: TenantPlan, createdAt: any, updatedAt: any }> };
+
+export type GetTenantByIdQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GetTenantByIdQuery = { __typename?: 'Query', tenantById?: { __typename?: 'Tenant', id: string, name: string, slug: string, domain?: string | null, isActive: boolean, status: TenantStatus, plan: TenantPlan, createdAt: any, updatedAt: any } | null };
+
+export type GetTenantBySlugQueryVariables = Exact<{
+  slug: Scalars['String']['input'];
+}>;
+
+
+export type GetTenantBySlugQuery = { __typename?: 'Query', tenantBySlug?: { __typename?: 'Tenant', id: string, name: string, slug: string, domain?: string | null, isActive: boolean, status: TenantStatus, plan: TenantPlan, createdAt: any, updatedAt: any } | null };

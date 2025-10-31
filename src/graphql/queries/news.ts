@@ -37,12 +37,6 @@ export const GET_NEWS_ARTICLES = gql`
       keywords
       publishedAt
       scheduledAt
-      author {
-        id
-        email
-        firstName
-        lastName
-      }
       category {
         id
         name
@@ -80,12 +74,6 @@ export const GET_NEWS_ARTICLE_BY_ID = gql`
       keywords
       publishedAt
       scheduledAt
-      author {
-        id
-        email
-        firstName
-        lastName
-      }
       category {
         id
         name

@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { PasswordInput } from '@/components/password-input'
-import { LoginDocument } from '@/__generated__/graphql'
+import { LoginDocument, GetMeDocument } from '@/__generated__/graphql'
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -42,7 +42,10 @@ export function UserAuthForm({
 }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const [loginMutation] = useMutation(LoginDocument)
+  const [loginMutation] = useMutation(LoginDocument, {
+    refetchQueries: [{ query: GetMeDocument }],
+    awaitRefetchQueries: true,
+  })
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
