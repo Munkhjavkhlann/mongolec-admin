@@ -18,6 +18,12 @@ import {
   GalleryVerticalEnd,
   AudioWaveform,
   Building2,
+  Trophy,
+  FileText,
+  MapPin,
+  BookOpen,
+  DollarSign,
+  Heart,
 } from "lucide-react";
 import { type SidebarData } from "../types";
 
@@ -52,6 +58,32 @@ export const sidebarData: SidebarData = {
           title: "Dashboard",
           url: "/",
           icon: LayoutDashboard,
+        },
+        {
+          title: "Rally",
+          icon: Trophy,
+          items: [
+            {
+              title: "Rallies",
+              url: "/rallies",
+              icon: Trophy,
+            },
+            {
+              title: "Applications",
+              url: "/applications",
+              icon: FileText,
+            },
+            {
+              title: "Nominations",
+              url: "/nominations",
+              icon: MapPin,
+            },
+            {
+              title: "Stories",
+              url: "/stories",
+              icon: BookOpen,
+            },
+          ],
         },
         {
           title: "News",
