@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   admin:
-    build: .
+    image: ghcr.io/munkhjavkhlann/mongolec-admin:latest
     container_name: mongolec-admin
     restart: unless-stopped
     ports:
