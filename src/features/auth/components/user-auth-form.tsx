@@ -60,7 +60,7 @@ export function UserAuthForm({
       })
 
       if (loginData?.login?.success) {
-        setUser(loginData.login.user)
+        setUser(loginData.login.user ?? null)
         toast.success(loginData.login.message || `Welcome back!`)
         const targetPath = redirectTo || '/'
         router.push(targetPath)

@@ -1,0 +1,107 @@
+import { gql } from '@apollo/client';
+import { useQuery, useMutation, useLazyQuery } from '@apollo/client/react';
+import type { QueryHookOptions, MutationHookOptions, LazyQueryHookOptions } from '@apollo/client/react';
+
+export type Maybe<T> = T | null;
+export type InputMaybe<T> = Maybe<T>;
+export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
+
+// Basic types for authentication
+export type User = {
+  __typename?: 'User';
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  isActive: boolean;
+  profileImage?: Maybe<string>;
+  tenant?: Maybe<Tenant>;
+  createdAt?: Maybe<string>;
+  updatedAt?: Maybe<string>;
+};
+
+export type Tenant = {
+  __typename?: 'Tenant';
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type LoginResult = {
+  __typename?: 'LoginResult';
+  success: boolean;
+  message?: Maybe<string>;
+  user?: Maybe<User>;
+};
+
+export type LoginMutationVariables = Exact<{
+  email: string;
+  password: string;
+}>;
+
+export type LoginMutation = {
+  __typename?: 'Mutation';
+  login?: Maybe<LoginResult>;
+};
+
+export type MeQuery = {
+  __typename?: 'Query';
+  me?: Maybe<User>;
+};
+
+// GraphQL operations
+export const LoginDocument = gql`
+  mutation Login($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      success
+      message
+      user {
+        id
+        firstName
+        lastName
+        email
+        isActive
+        profileImage
+        tenant {
+          id
+          name
+          slug
+        }
+      }
+    }
+  }
+`;
+
+export const MeDocument = gql`
+  query Me {
+    me {
+      id
+      firstName
+      lastName
+      email
+      isActive
+      profileImage
+      tenant {
+        id
+        name
+        slug
+      }
+    }
+  }
+`;
+
+// Hooks
+export function useLoginMutation(baseOptions?: MutationHookOptions<LoginMutation, LoginMutationVariables>) {
+  const options = {...baseOptions};
+  return useMutation<LoginMutation, LoginMutationVariables>(LoginDocument, options);
+}
+
+export function useMeQuery(baseOptions?: QueryHookOptions<MeQuery, {}>) {
+  const options = {...baseOptions};
+  return useQuery<MeQuery, {}>(MeDocument, options);
+}
+
+export function useMeLazyQuery(baseOptions?: LazyQueryHookOptions<MeQuery, {}>) {
+  const options = {...baseOptions};
+  return useLazyQuery<MeQuery, {}>(MeDocument, options);
+}

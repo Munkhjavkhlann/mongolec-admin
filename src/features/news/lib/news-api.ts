@@ -46,7 +46,7 @@ const mockArticles: NewsArticle[] = [
     title: 'Environmental Protection Initiative Launched',
     slug: 'environmental-protection-initiative',
     status: 'draft',
-    priority: 'medium',
+    priority: 'normal',
     category: 'Environment',
     author: {
       id: '3',
@@ -65,7 +65,7 @@ const mockArticles: NewsArticle[] = [
     title: 'Sports Championship Results',
     slug: 'sports-championship-results',
     status: 'scheduled',
-    priority: 'medium',
+    priority: 'normal',
     category: 'Sports',
     author: {
       id: '4',
@@ -104,7 +104,7 @@ const mockArticles: NewsArticle[] = [
     title: `Sample Article ${i + 6}: Lorem Ipsum Dolor Sit Amet`,
     slug: `sample-article-${i + 6}`,
     status: ['draft', 'published', 'scheduled'][i % 3] as NewsArticle['status'],
-    priority: ['low', 'medium', 'high'][i % 3] as NewsArticle['priority'],
+    priority: ['low', 'normal', 'high'][i % 3] as NewsArticle['priority'],
     category: ['Politics', 'Health', 'Education', 'Business'][i % 4],
     author: {
       id: `${(i % 3) + 1}`,

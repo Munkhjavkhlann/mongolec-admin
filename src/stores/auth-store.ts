@@ -7,8 +7,8 @@ type User = {
   lastName: string
   email: string
   isActive: boolean
-  createdAt: any
-  updatedAt: any
+  createdAt?: any
+  updatedAt?: any
 }
 
 type AuthActions = {

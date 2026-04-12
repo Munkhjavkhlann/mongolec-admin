@@ -19,7 +19,10 @@ import { AlertCircle } from "lucide-react";
 import { useState } from "react";
 
 interface GetRalliesData {
-  rallies: any[];
+  rallies: {
+    rallies: any[]
+    pagination: any
+  }
 }
 
 export default function RalliesPage() {

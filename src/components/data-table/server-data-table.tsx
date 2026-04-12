@@ -49,7 +49,7 @@ export interface ServerDataTableProps<T> {
   onSort?: (column: string, direction: 'asc' | 'desc') => void
 }
 
-export function ServerDataTable<T extends Record<string, unknown>>({
+export function ServerDataTable<T extends object>({
   data,
   columns,
   totalItems,
@@ -96,9 +96,9 @@ export function ServerDataTable<T extends Record<string, unknown>>({
     if (typeof column.key === 'string' && column.key.includes('.')) {
       // Handle nested keys like 'user.name'
       const keys = column.key.split('.')
-      let value = row
+      let value: unknown = row
       for (const key of keys) {
-        value = value?.[key]
+        value = (value as Record<string, unknown>)?.[key]
       }
       return value
     }

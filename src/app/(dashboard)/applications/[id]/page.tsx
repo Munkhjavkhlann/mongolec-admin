@@ -31,6 +31,57 @@ import {
 } from 'lucide-react'
 import { GET_APPLICATION } from '@/graphql/queries/applications'
 import { AlertCircle } from 'lucide-react'
+
+interface RallyInfo {
+  id: string
+  title: string | { en: string; mn: string }
+  slug: string
+  startDate: string
+  endDate: string
+  location: string | { en: string; mn: string }
+  maxParticipants: number
+  currentParticipants: number
+}
+
+interface ApplicationDetail {
+  id: string
+  rally: RallyInfo
+  status: string
+  isRider: boolean
+  hasMotorcycleLicense?: boolean
+  ridingExperience?: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  country: string
+  city: string
+  address?: string
+  birthdate?: string
+  isMedicalProfessional: boolean
+  medicalConditions?: string
+  dietaryRestrictions?: string
+  emergencyContactFirstName: string
+  emergencyContactLastName: string
+  emergencyContactPhone: string
+  emergencyContactEmail: string
+  emergencyContactRelationship: string
+  motivation?: string
+  travelExperience?: string
+  futureLocations?: string
+  depositPaid: boolean
+  depositAmount?: number
+  fullyPaid: boolean
+  totalAmount?: number
+  reviewedBy?: string
+  reviewedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface GetApplicationQuery {
+  applicationById: ApplicationDetail
+}
 import Link from 'next/link'
 import {
   ApproveButton,
@@ -46,7 +97,7 @@ export default function ApplicationDetailPage() {
   const router = useRouter()
   const applicationId = params.id as string
 
-  const { data, loading, error, refetch } = useQuery(GET_APPLICATION, {
+  const { data, loading, error, refetch } = useQuery<GetApplicationQuery>(GET_APPLICATION, {
     variables: { id: applicationId },
     fetchPolicy: 'cache-and-network',
   })

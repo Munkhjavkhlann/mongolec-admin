@@ -25,7 +25,10 @@ import {
 } from '@/components/ui/select'
 
 interface GetNominationsData {
-  nominations: any[]
+  nominations: {
+    nominations: any[]
+    pagination: any
+  }
 }
 
 interface GetNominationStatsData {
@@ -214,12 +217,12 @@ export default function NominationsPage() {
 
           <div className="flex gap-2">
             {/* Country Filter */}
-            <Select value={countryFilter} onValueChange={setCountryFilter}>
+            <Select value={countryFilter ?? ''} onValueChange={(v) => setCountryFilter(v || undefined)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter by country" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={undefined}>All Countries</SelectItem>
+                <SelectItem value="">All Countries</SelectItem>
                 {countries.map((country) => (
                   <SelectItem key={country} value={country}>
                     {country}

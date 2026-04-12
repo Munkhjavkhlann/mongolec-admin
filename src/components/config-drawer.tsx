@@ -332,14 +332,14 @@ function DirConfig() {
             value: 'ltr',
             label: 'Left to Right',
             icon: (props: SVGProps<SVGSVGElement>) => (
-              <IconDir dir='ltr' {...props} />
+              <IconDir {...props} />
             ),
           },
           {
             value: 'rtl',
             label: 'Right to Left',
             icon: (props: SVGProps<SVGSVGElement>) => (
-              <IconDir dir='rtl' {...props} />
+              <IconDir {...props} />
             ),
           },
         ].map((item) => (

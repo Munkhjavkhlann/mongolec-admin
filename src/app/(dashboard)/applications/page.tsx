@@ -26,7 +26,10 @@ import {
 import { GET_RALLIES } from '@/graphql/queries/rallies'
 
 interface GetApplicationsData {
-  applications: any[]
+  applications: {
+    applications: any[]
+    pagination: any
+  }
 }
 
 interface GetApplicationStatsData {
@@ -43,7 +46,10 @@ interface GetApplicationStatsData {
 }
 
 interface GetRalliesData {
-  rallies: any[]
+  rallies: {
+    rallies: any[]
+    pagination: any
+  }
 }
 
 export default function ApplicationsPage() {
@@ -231,12 +237,12 @@ export default function ApplicationsPage() {
 
           <div className="flex gap-2">
             {/* Rally Filter */}
-            <Select value={rallyFilter} onValueChange={setRallyFilter}>
+            <Select value={rallyFilter ?? ''} onValueChange={(v) => setRallyFilter(v || undefined)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter by rally" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={undefined}>All Rallies</SelectItem>
+                <SelectItem value="">All Rallies</SelectItem>
                 {rallies.map((rally) => (
                   <SelectItem key={rally.id} value={rally.id}>
                     {getDisplayName(rally.title)}

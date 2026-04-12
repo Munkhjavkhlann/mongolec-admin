@@ -38,12 +38,45 @@ import {
 } from '@/features/nominations/components/nomination-actions'
 import { nominationStatusConfig } from '@/features/nominations/types'
 
+interface NominationDetail {
+  id: string
+  country: string
+  parkNames: string[]
+  parkWebsites?: string[]
+  parkContactFirstName: string
+  parkContactLastName: string
+  parkContactEmail: string
+  partnerOrganizationName?: string
+  partnerContactFirstName?: string
+  partnerContactLastName?: string
+  partnerContactEmail?: string
+  partnerWebsite?: string
+  partnerAddress?: string
+  primaryMission?: string
+  motorcycleSupport?: string
+  partnerLogisticsSupport?: string
+  otherInfo?: string
+  howHeard?: string
+  status: string
+  selectedForRallyId?: string
+  submittedBy?: string
+  reviewedBy?: string
+  reviewedAt?: string
+  reviewNotes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface GetNominationQuery {
+  nominationById: NominationDetail
+}
+
 export default function NominationDetailPage() {
   const params = useParams()
   const router = useRouter()
   const nominationId = params.id as string
 
-  const { data, loading, error, refetch } = useQuery(GET_NOMINATION, {
+  const { data, loading, error, refetch } = useQuery<GetNominationQuery>(GET_NOMINATION, {
     variables: { id: nominationId },
     fetchPolicy: 'cache-and-network',
   })
@@ -104,7 +137,7 @@ export default function NominationDetailPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {nomination.parkName}
+              {nomination.parkNames[0]}
             </h1>
             <p className="text-muted-foreground">{nomination.country}</p>
           </div>
@@ -161,20 +194,20 @@ export default function NominationDetailPage() {
             <CardContent className="space-y-4">
               <div>
                 <div className="text-sm font-medium text-muted-foreground">Park Name</div>
-                <div className="text-lg font-medium">{nomination.parkName}</div>
+                <div className="text-lg font-medium">{nomination.parkNames[0]}</div>
               </div>
-              {nomination.parkWebsite && (
+              {nomination.parkWebsites?.[0] && (
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Website</div>
                   <div className="flex items-center gap-2">
                     <Globe className="h-4 w-4 text-muted-foreground" />
                     <a
-                      href={nomination.parkWebsite}
+                      href={nomination.parkWebsites[0]}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
-                      {nomination.parkWebsite}
+                      {nomination.parkWebsites[0]}
                     </a>
                   </div>
                 </div>
@@ -192,10 +225,10 @@ export default function NominationDetailPage() {
               <CardTitle>Park Contact</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {nomination.parkContactName && (
+              {(nomination.parkContactFirstName || nomination.parkContactLastName) && (
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Contact Name</div>
-                  <div className="text-lg">{nomination.parkContactName}</div>
+                  <div className="text-lg">{`${nomination.parkContactFirstName} ${nomination.parkContactLastName}`.trim()}</div>
                 </div>
               )}
               {nomination.parkContactEmail && (
@@ -224,16 +257,16 @@ export default function NominationDetailPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {nomination.partnerOrganization && (
+              {nomination.partnerOrganizationName && (
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Organization</div>
-                  <div className="text-lg font-medium">{nomination.partnerOrganization}</div>
+                  <div className="text-lg font-medium">{nomination.partnerOrganizationName}</div>
                 </div>
               )}
-              {nomination.partnerContactPerson && (
+              {(nomination.partnerContactFirstName || nomination.partnerContactLastName) && (
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Contact Person</div>
-                  <div>{nomination.partnerContactPerson}</div>
+                  <div>{`${nomination.partnerContactFirstName ?? ''} ${nomination.partnerContactLastName ?? ''}`.trim()}</div>
                 </div>
               )}
               {nomination.partnerContactEmail && (
@@ -298,20 +331,20 @@ export default function NominationDetailPage() {
                   <div className="mt-1 whitespace-pre-wrap">{nomination.motorcycleSupport}</div>
                 </div>
               )}
-              {nomination.logisticsSupport && (
+              {nomination.partnerLogisticsSupport && (
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">
                     Logistics Support
                   </div>
-                  <div className="mt-1 whitespace-pre-wrap">{nomination.logisticsSupport}</div>
+                  <div className="mt-1 whitespace-pre-wrap">{nomination.partnerLogisticsSupport}</div>
                 </div>
               )}
-              {nomination.additionalInfo && (
+              {nomination.otherInfo && (
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">
                     Additional Information
                   </div>
-                  <div className="mt-1 whitespace-pre-wrap">{nomination.additionalInfo}</div>
+                  <div className="mt-1 whitespace-pre-wrap">{nomination.otherInfo}</div>
                 </div>
               )}
             </CardContent>
