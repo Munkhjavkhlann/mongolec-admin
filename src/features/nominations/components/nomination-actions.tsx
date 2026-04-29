@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -36,6 +37,7 @@ interface NominationActionsProps {
 }
 
 export function ApproveButton({ nominationId, onActionComplete }: NominationActionsProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState('')
   const [approveNomination, { loading }] = useMutation(APPROVE_NOMINATION, {
@@ -51,6 +53,7 @@ export function ApproveButton({ nominationId, onActionComplete }: NominationActi
         },
       })
       toast.success('Nomination approved successfully')
+      router.refresh()
       setOpen(false)
       setNotes('')
       onActionComplete?.()
@@ -108,6 +111,7 @@ export function ApproveButton({ nominationId, onActionComplete }: NominationActi
 }
 
 export function RejectButton({ nominationId, onActionComplete }: NominationActionsProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [rejectNomination, { loading }] = useMutation(REJECT_NOMINATION, {
@@ -128,6 +132,7 @@ export function RejectButton({ nominationId, onActionComplete }: NominationActio
         },
       })
       toast.success('Nomination rejected successfully')
+      router.refresh()
       setOpen(false)
       setReason('')
       onActionComplete?.()
@@ -186,6 +191,7 @@ export function RejectButton({ nominationId, onActionComplete }: NominationActio
 }
 
 export function SelectButton({ nominationId, onActionComplete }: NominationActionsProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [rallyId, setRallyId] = useState('')
   const [selectNomination, { loading }] = useMutation(SELECT_NOMINATION, {
@@ -206,6 +212,7 @@ export function SelectButton({ nominationId, onActionComplete }: NominationActio
         },
       })
       toast.success('Nomination selected for rally successfully')
+      router.refresh()
       setOpen(false)
       setRallyId('')
       onActionComplete?.()

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -37,6 +38,7 @@ interface ApplicationActionsProps {
 }
 
 export function ApproveButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState('')
   const [approveApplication, { loading }] = useMutation(APPROVE_APPLICATION, {
@@ -52,6 +54,7 @@ export function ApproveButton({ applicationId, onActionComplete }: ApplicationAc
         },
       })
       toast.success('Application approved successfully')
+      router.refresh()
       setOpen(false)
       setNotes('')
       onActionComplete?.()
@@ -109,6 +112,7 @@ export function ApproveButton({ applicationId, onActionComplete }: ApplicationAc
 }
 
 export function RejectButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [rejectApplication, { loading }] = useMutation(REJECT_APPLICATION, {
@@ -129,6 +133,7 @@ export function RejectButton({ applicationId, onActionComplete }: ApplicationAct
         },
       })
       toast.success('Application rejected successfully')
+      router.refresh()
       setOpen(false)
       setReason('')
       onActionComplete?.()
@@ -187,6 +192,7 @@ export function RejectButton({ applicationId, onActionComplete }: ApplicationAct
 }
 
 export function WaitlistButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState('')
   const [waitlistApplication, { loading }] = useMutation(WAITLIST_APPLICATION, {
@@ -202,6 +208,7 @@ export function WaitlistButton({ applicationId, onActionComplete }: ApplicationA
         },
       })
       toast.success('Application added to waitlist successfully')
+      router.refresh()
       setOpen(false)
       setNotes('')
       onActionComplete?.()
@@ -259,6 +266,7 @@ export function WaitlistButton({ applicationId, onActionComplete }: ApplicationA
 }
 
 export function ConfirmButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+  const router = useRouter()
   const [confirmApplication, { loading }] = useMutation(CONFIRM_APPLICATION, {
     refetchQueries: ['GetApplications', 'GetApplication', 'GetApplicationStats'],
   })
@@ -271,6 +279,7 @@ export function ConfirmButton({ applicationId, onActionComplete }: ApplicationAc
         },
       })
       toast.success('Application confirmed successfully')
+      router.refresh()
       onActionComplete?.()
     } catch (error) {
       console.error('Failed to confirm application:', error)
@@ -296,6 +305,7 @@ export function UpdatePaymentStatusButton({
   currentStatus,
   onActionComplete,
 }: ApplicationActionsProps & { currentStatus: string }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState(currentStatus)
   const [updatePaymentStatus, { loading }] = useMutation(UPDATE_APPLICATION_PAYMENT_STATUS, {
@@ -311,6 +321,7 @@ export function UpdatePaymentStatusButton({
         },
       })
       toast.success('Payment status updated successfully')
+      router.refresh()
       setOpen(false)
       onActionComplete?.()
     } catch (error) {

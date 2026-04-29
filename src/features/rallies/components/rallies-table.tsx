@@ -35,12 +35,14 @@ import { rallyStatusConfig } from '../types'
 import { useMutation } from '@apollo/client/react'
 import { UPDATE_RALLY_STATUS, TOGGLE_RECRUITING } from '@/graphql/mutations/rallies'
 import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface RalliesTableProps {
   rallies: Rally[]
 }
 
 export function RalliesTable({ rallies }: RalliesTableProps) {
+  const router = useRouter()
   const [selectedRallies, setSelectedRallies] = useState<string[]>([])
   const [updateStatus] = useMutation(UPDATE_RALLY_STATUS)
   const [toggleRecruiting] = useMutation(TOGGLE_RECRUITING)
@@ -87,6 +89,7 @@ export function RalliesTable({ rallies }: RalliesTableProps) {
         refetchQueries: ['GetRallies'],
       })
       toast.success('Rally status updated successfully')
+      router.refresh()
     } catch (error) {
       console.error('Failed to update rally status:', error)
       toast.error('Failed to update rally status')
@@ -100,6 +103,7 @@ export function RalliesTable({ rallies }: RalliesTableProps) {
         refetchQueries: ['GetRallies'],
       })
       toast.success('Recruiting status toggled successfully')
+      router.refresh()
     } catch (error) {
       console.error('Failed to toggle recruiting:', error)
       toast.error('Failed to toggle recruiting')
