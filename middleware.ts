@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-export function middleware(request: NextRequest) {
+export function middleware(request: NextRequest): NextResponse {
   const token = request.cookies.get('auth-token')
 
   if (!token) {
