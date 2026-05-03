@@ -109,7 +109,7 @@ const columns: ColumnDef<Subscriber>[] = [
       )
     },
   },
-  createCreatedAtColumn<Subscriber>({ label: 'Subscribed' }),
+  createCreatedAtColumn<Subscriber>({ title: 'Subscribed' }),
 ]
 
 export default function NewsletterPage() {
