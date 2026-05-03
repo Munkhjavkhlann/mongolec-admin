@@ -1,7 +1,11 @@
+'use client'
+
 import * as React from 'react'
+
 import { CheckIcon, PlusCircledIcon } from '@radix-ui/react-icons'
 import { type Column } from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
+import { X } from 'lucide-react'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,12 +17,9 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 
 type DataTableFacetedFilterProps<TData, TValue> = {
   column?: Column<TData, TValue>
@@ -28,48 +29,91 @@ type DataTableFacetedFilterProps<TData, TValue> = {
     value: string
     icon?: React.ComponentType<{ className?: string }>
   }[]
+  // Virtual filter props (when column is undefined)
+  value?: string[]
+  onValueChange?: (value: string[] | undefined) => void
+  variant?: 'default' | 'simple'
 }
 
 export function DataTableFacetedFilter<TData, TValue>({
   column,
   title,
   options,
+  value: externalValue,
+  onValueChange: externalOnValueChange,
+  variant = 'default',
 }: DataTableFacetedFilterProps<TData, TValue>) {
   const facets = column?.getFacetedUniqueValues()
-  const selectedValues = new Set(column?.getFilterValue() as string[])
+
+  // Use external value for virtual filters or column value for table filters
+  const filterValue = column ? (column.getFilterValue() as string[]) : externalValue
+
+  const selectedValues = React.useMemo(() => {
+    return new Set(filterValue || [])
+  }, [filterValue])
+
+  const handleOptionSelect = React.useCallback(
+    (optionValue: string, isSelected: boolean) => {
+      const currentValues = Array.from(selectedValues)
+      let newValues: string[]
+
+      if (isSelected) {
+        newValues = currentValues.filter(value => value !== optionValue)
+      } else {
+        newValues = [...currentValues, optionValue]
+      }
+
+      const finalValue = newValues.length ? newValues : undefined
+
+      if (column) {
+        column.setFilterValue(finalValue)
+      } else {
+        externalOnValueChange?.(finalValue)
+      }
+    },
+    [selectedValues, column, externalOnValueChange]
+  )
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant='outline' size='sm' className='h-8 border-dashed'>
-          <PlusCircledIcon className='size-4' />
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            'h-8 border-dashed transition-all duration-200',
+            'hover:bg-muted/60 hover:border-muted-foreground/50',
+            selectedValues?.size > 0 &&
+              'border-primary bg-primary/5 text-primary hover:bg-primary/10'
+          )}
+        >
+          <PlusCircledIcon className="mr-2 size-4" />
           {title}
-          {selectedValues?.size > 0 && (
+          {selectedValues?.size > 0 && variant !== 'simple' && (
             <>
-              <Separator orientation='vertical' className='mx-2 h-4' />
+              <Separator orientation="vertical" className="mx-2 h-4" />
               <Badge
-                variant='secondary'
-                className='rounded-sm px-1 font-normal lg:hidden'
+                variant="secondary"
+                className="rounded-full px-2 py-0 text-xs font-medium lg:hidden"
               >
                 {selectedValues.size}
               </Badge>
-              <div className='hidden space-x-1 lg:flex'>
+              <div className="hidden space-x-1 lg:flex">
                 {selectedValues.size > 2 ? (
-                  <Badge
-                    variant='secondary'
-                    className='rounded-sm px-1 font-normal'
-                  >
-                    {selectedValues.size} selected
+                  <Badge variant="secondary" className="rounded-full px-2 py-0 text-xs font-medium">
+                    {selectedValues.size} сонгосон
                   </Badge>
                 ) : (
                   options
-                    .filter((option) => selectedValues.has(option.value))
-                    .map((option) => (
+                    .filter(option => selectedValues.has(option.value))
+                    .slice(0, 2)
+                    .map(option => (
                       <Badge
-                        variant='secondary'
+                        variant="secondary"
                         key={option.value}
-                        className='rounded-sm px-1 font-normal'
+                        className="flex items-center gap-1 rounded-full px-2 py-0 text-xs font-medium"
                       >
+                        {option.icon && <option.icon className="h-3 w-3" />}
                         {option.label}
                       </Badge>
                     ))
@@ -79,47 +123,51 @@ export function DataTableFacetedFilter<TData, TValue>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-[200px] p-0' align='start'>
-        <Command>
-          <CommandInput placeholder={title} />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
+      <PopoverContent
+        className="border-border/50 w-[240px] p-0 shadow-lg"
+        align="start"
+        sideOffset={8}
+      >
+        <Command className="rounded-lg">
+          <CommandInput
+            placeholder={`Хайх ${title?.toLowerCase()}...`}
+            className="h-9 border-0 focus:ring-0"
+          />
+          <CommandList className="max-h-64">
+            <CommandEmpty className="text-muted-foreground py-6 text-center text-sm">
+              No options found.
+            </CommandEmpty>
             <CommandGroup>
-              {options.map((option) => {
+              {options.map(option => {
                 const isSelected = selectedValues.has(option.value)
+                const count = facets?.get(option.value)
                 return (
                   <CommandItem
                     key={option.value}
-                    onSelect={() => {
-                      if (isSelected) {
-                        selectedValues.delete(option.value)
-                      } else {
-                        selectedValues.add(option.value)
-                      }
-                      const filterValues = Array.from(selectedValues)
-                      column?.setFilterValue(
-                        filterValues.length ? filterValues : undefined
-                      )
-                    }}
+                    onSelect={() => handleOptionSelect(option.value, isSelected)}
+                    className="hover:bg-muted/60 flex cursor-pointer items-center gap-3 px-3 py-2 transition-colors"
                   >
                     <div
                       className={cn(
-                        'border-primary flex size-4 items-center justify-center rounded-sm border',
+                        'flex size-4 items-center justify-center rounded border-2 transition-colors',
                         isSelected
-                          ? 'bg-primary text-primary-foreground'
-                          : 'opacity-50 [&_svg]:invisible'
+                          ? 'bg-primary border-primary text-primary-foreground'
+                          : 'border-muted-foreground/30 hover:border-muted-foreground/60'
                       )}
                     >
-                      <CheckIcon className={cn('text-background h-4 w-4')} />
+                      <CheckIcon className={cn('h-3 w-3', !isSelected && 'invisible')} />
                     </div>
                     {option.icon && (
-                      <option.icon className='text-muted-foreground size-4' />
+                      <option.icon className="text-muted-foreground size-4 shrink-0" />
                     )}
-                    <span>{option.label}</span>
-                    {facets?.get(option.value) && (
-                      <span className='ms-auto flex h-4 w-4 items-center justify-center font-mono text-xs'>
-                        {facets.get(option.value)}
-                      </span>
+                    <span className="flex-1 truncate">{option.label}</span>
+                    {count && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-auto h-5 rounded-full px-1.5 font-mono text-xs"
+                      >
+                        {count}
+                      </Badge>
                     )}
                   </CommandItem>
                 )
@@ -127,13 +175,20 @@ export function DataTableFacetedFilter<TData, TValue>({
             </CommandGroup>
             {selectedValues.size > 0 && (
               <>
-                <CommandSeparator />
+                <CommandSeparator className="mx-2" />
                 <CommandGroup>
                   <CommandItem
-                    onSelect={() => column?.setFilterValue(undefined)}
-                    className='justify-center text-center'
+                    onSelect={() => {
+                      if (column) {
+                        column.setFilterValue(undefined)
+                      } else {
+                        externalOnValueChange?.(undefined)
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-foreground mb-1 cursor-pointer justify-center py-2 text-center"
                   >
-                    Clear filters
+                    <X className="mr-2 h-4 w-4" />
+                    Цэвэрлэх
                   </CommandItem>
                 </CommandGroup>
               </>

@@ -28,7 +28,32 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PasswordInput } from '@/components/password-input'
-import { RegisterDocument, GetTenantsDocument } from '@/__generated__/graphql'
+import { REGISTER } from '@/graphql/mutations/auth'
+import { GET_TENANTS } from '@/graphql/queries/tenant'
+
+interface RegisterData {
+  register: {
+    success: boolean
+    message?: string
+    user: {
+      id: string
+      firstName: string
+      lastName: string
+      email: string
+      isActive: boolean
+      createdAt: string
+      updatedAt: string
+    }
+  }
+}
+
+interface GetTenantsData {
+  tenants: Array<{
+    id: string
+    name: string
+    slug: string
+  }>
+}
 
 const formSchema = z
   .object({
@@ -57,8 +82,8 @@ export function SignUpForm({ className, ...props }: SignUpFormProps) {
   const router = useRouter()
   const { setUser } = useAuthStore()
 
-  const { data: tenantsData, loading: tenantsLoading } = useQuery(GetTenantsDocument)
-  const [registerMutation] = useMutation(RegisterDocument)
+  const { data: tenantsData, loading: tenantsLoading } = useQuery<GetTenantsData>(GET_TENANTS)
+  const [registerMutation] = useMutation<RegisterData>(REGISTER)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

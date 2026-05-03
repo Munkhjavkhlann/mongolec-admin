@@ -1,24 +1,29 @@
+export interface NewsCategory {
+  id: string
+  name: string
+  slug: string
+  color?: string | null
+  icon?: string | null
+}
+
 export interface NewsArticle {
   id: string
   title: string
   slug: string
   status: 'draft' | 'published' | 'scheduled' | 'archived'
   priority: 'low' | 'normal' | 'high' | 'urgent' | 'breaking'
-  category: string
-  author: {
-    id: string
-    name: string
-    email: string
-  }
+  category: NewsCategory | null
+  byline?: string | null
   publishedAt: string | null
   scheduledAt?: string | null
   createdAt: string
   updatedAt: string
-  views: number
-  featured: boolean
+  views?: number
   isBreaking?: boolean
   isFeatured?: boolean
-  language: 'en' | 'mn'
+  /** @deprecated use isFeatured */
+  featured?: boolean
+  featuredImage?: string | null
 }
 
 export const priorityConfig = {

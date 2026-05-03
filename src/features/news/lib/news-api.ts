@@ -10,7 +10,7 @@ const NEWS_ARTICLES_QUERY = `
     $limit: Int
     $offset: Int
   ) {
-    newsArticles(
+    getNewsArticles(
       language: $language
       status: $status
       priority: $priority
@@ -77,6 +77,7 @@ function mapArticle(raw: RawNewsArticle): NewsArticle {
     views: 0,
     publishedAt: raw.publishedAt ?? null,
     scheduledAt: raw.scheduledAt,
+    featuredImage: raw.featuredImage ?? null,
     category: raw.category ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
@@ -91,7 +92,7 @@ export async function getNewsArticles(
   const offset = (page - 1) * pageSize
 
   try {
-    const data = await serverGraphQL<{ newsArticles: RawNewsArticle[] }>({
+    const data = await serverGraphQL<{ getNewsArticles: RawNewsArticle[] }>({
       query: NEWS_ARTICLES_QUERY,
       variables: {
         language: filters.language ?? 'en',
@@ -102,7 +103,7 @@ export async function getNewsArticles(
       },
     })
 
-    let articles = (data.newsArticles ?? []).map(mapArticle)
+    let articles = (data.getNewsArticles ?? []).map(mapArticle)
 
     if (filters.search) {
       const q = filters.search.toLowerCase()
@@ -136,12 +137,12 @@ export async function getNewsArticles(
 
 export async function getNewsStats(): Promise<NewsStats> {
   try {
-    const data = await serverGraphQL<{ newsArticles: RawNewsArticle[] }>({
+    const data = await serverGraphQL<{ getNewsArticles: RawNewsArticle[] }>({
       query: NEWS_ARTICLES_QUERY,
       variables: { language: 'en', limit: 1000, offset: 0 },
     })
 
-    const articles = data.newsArticles ?? []
+    const articles = data.getNewsArticles ?? []
 
     return {
       total: articles.length,

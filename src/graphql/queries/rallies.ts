@@ -1,71 +1,37 @@
 import { gql } from '@apollo/client'
+import { RALLY_FIELDS } from '../fragments/rally'
+import { PAGINATION_FIELDS } from '../fragments/pagination'
 
 export const GET_RALLIES = gql`
+  ${RALLY_FIELDS}
+  ${PAGINATION_FIELDS}
   query GetRallies(
-    $language: String
-    $status: String
+    $status: RallyStatus
     $limit: Int
-    $offset: Int
+    $page: Int
   ) {
-    rallies(
-      language: $language
+    getRallies(
       status: $status
       limit: $limit
-      offset: $offset
+      page: $page
     ) {
       rallies {
-        id
-        title
-        slug
-        description
-        startDate
-        endDate
-        location
-        duration
-        targetAudience
-        maxParticipants
-        currentParticipants
-        heroImage
-        heroVideo
-        isRecruiting
-        applicationDeadline
-        status
-        createdAt
-        updatedAt
+        ...RallyFields
       }
       pagination {
-        total
-        totalPages
-        currentPage
-        perPage
-        hasNextPage
-        hasPreviousPage
+        ...PaginationFields
       }
     }
   }
 `
 
 export const GET_RALLY_BY_ID = gql`
-  query GetRallyById($id: ID!, $language: String) {
-    rallyById(id: $id, language: $language) {
-      id
-      title
-      slug
-      description
-      startDate
-      endDate
-      location
-      duration
-      targetAudience
-      maxParticipants
-      currentParticipants
-      heroImage
-      heroVideo
-      isRecruiting
-      applicationDeadline
-      status
-      createdAt
-      updatedAt
+  ${RALLY_FIELDS}
+  query GetRallyById($id: ID!) {
+    getRally(id: $id) {
+      ...RallyFields
+      highlights
+      rangerPartnerships
     }
   }
 `

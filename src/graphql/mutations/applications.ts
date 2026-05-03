@@ -64,9 +64,9 @@ export const CANCEL_APPLICATION = gql`
   }
 `
 
-export const UPDATE_APPLICATION_STATUS = gql`
-  mutation UpdateApplicationStatus($id: ID!, $status: ApplicationStatus!, $notes: String) {
-    updateApplicationStatus(id: $id, status: $status, notes: $notes) {
+export const CHANGE_APPLICATION_STATUS = gql`
+  mutation ChangeApplicationStatus($id: ID!, $status: ApplicationStatus!, $notes: String) {
+    changeApplicationStatus(id: $id, status: $status, notes: $notes) {
       id
       status
       adminNotes
@@ -77,11 +77,12 @@ export const UPDATE_APPLICATION_STATUS = gql`
   }
 `
 
-export const UPDATE_APPLICATION_PAYMENT_STATUS = gql`
-  mutation UpdateApplicationPaymentStatus($id: ID!, $paymentStatus: PaymentStatus!) {
-    updateApplicationPaymentStatus(id: $id, paymentStatus: $paymentStatus) {
+export const CHANGE_APPLICATION_PAYMENT_STATUS = gql`
+  mutation ChangeApplicationPaymentStatus($id: ID!, $depositPaid: Boolean, $fullyPaid: Boolean) {
+    changeApplicationPaymentStatus(id: $id, depositPaid: $depositPaid, fullyPaid: $fullyPaid) {
       id
-      paymentStatus
+      depositPaid
+      fullyPaid
       updatedAt
     }
   }

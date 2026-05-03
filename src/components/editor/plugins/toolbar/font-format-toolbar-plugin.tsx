@@ -10,6 +10,7 @@ import {
 } from "lexical"
 import {
   BoldIcon,
+  CodeIcon,
   ItalicIcon,
   StrikethroughIcon,
   UnderlineIcon,
@@ -27,6 +28,7 @@ const FORMATS = [
   { format: "italic", icon: ItalicIcon, label: "Italic" },
   { format: "underline", icon: UnderlineIcon, label: "Underline" },
   { format: "strikethrough", icon: StrikethroughIcon, label: "Strikethrough" },
+  { format: "code", icon: CodeIcon, label: "Inline Code" },
 ] as const
 
 export function FontFormatToolbarPlugin() {

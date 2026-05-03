@@ -1,15 +1,20 @@
 'use client'
 
+import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import {
+  MapPin,
+  Building2,
+  MoreHorizontal,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Trophy,
+} from 'lucide-react'
+import Link from 'next/link'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,22 +23,180 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  MapPin,
-  Building,
-  MoreHorizontal,
-  Calendar,
-  Loader2,
-  FileText,
-} from 'lucide-react'
-import Link from 'next/link'
+import { DataTable, createCreatedAtColumn } from '@/components/data-table'
 import type { Nomination } from '../types'
 import { nominationStatusConfig } from '../types'
-import {
-  ApproveButton,
-  RejectButton,
-  SelectButton,
-} from './nomination-actions'
+import { ApproveDialog, RejectDialog, SelectDialog } from './nomination-actions'
+
+type DialogAction = 'approve' | 'reject' | 'select' | null
+
+
+function getDisplayName(field: string | { en: string; mn: string } | undefined): string {
+  if (!field) return ''
+  if (typeof field === 'string') return field
+  return field.en || field.mn || ''
+}
+
+function ActionsCell({
+  nomination,
+  onActionComplete,
+}: {
+  nomination: Nomination
+  onActionComplete?: () => void
+}) {
+  const [dialog, setDialog] = useState<DialogAction>(null)
+
+  const closeDialog = () => setDialog(null)
+  const handleComplete = () => {
+    closeDialog()
+    onActionComplete?.()
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">Open menu</span>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+            Actions
+          </DropdownMenuLabel>
+          <DropdownMenuItem asChild>
+            <Link href={`/nominations/${nomination.id}`} className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              View Details
+            </Link>
+          </DropdownMenuItem>
+
+          {(nomination.status === 'PENDING' || nomination.status === 'UNDER_REVIEW') && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setDialog('approve')}
+                className="flex items-center gap-2"
+              >
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                Approve
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setDialog('reject')}
+                className="flex items-center gap-2 text-destructive focus:text-destructive"
+              >
+                <XCircle className="h-4 w-4" />
+                Reject
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {nomination.status === 'APPROVED' && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setDialog('select')}
+                className="flex items-center gap-2"
+              >
+                <Trophy className="h-4 w-4 text-purple-600" />
+                Select for Rally
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ApproveDialog
+        open={dialog === 'approve'}
+        onOpenChange={(o) => !o && closeDialog()}
+        nominationId={nomination.id}
+        onActionComplete={handleComplete}
+      />
+      <RejectDialog
+        open={dialog === 'reject'}
+        onOpenChange={(o) => !o && closeDialog()}
+        nominationId={nomination.id}
+        onActionComplete={handleComplete}
+      />
+      <SelectDialog
+        open={dialog === 'select'}
+        onOpenChange={(o) => !o && closeDialog()}
+        nominationId={nomination.id}
+        onActionComplete={handleComplete}
+      />
+    </>
+  )
+}
+
+function buildColumns(onActionComplete?: () => void): ColumnDef<Nomination>[] {
+  return [
+    {
+      accessorKey: 'parkNames',
+      header: 'Park',
+      cell: ({ row }) => {
+        const nomination = row.original
+        const website = nomination.parkWebsites ? getDisplayName(nomination.parkWebsites) : null
+        const subtextParts = [nomination.country, website].filter(Boolean)
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-green-100 bg-green-50">
+              <MapPin className="h-4 w-4 text-green-600" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-medium text-sm truncate max-w-[180px]">
+                {getDisplayName(nomination.parkNames)}
+              </div>
+              {subtextParts.length > 0 && (
+                <div className="text-xs text-muted-foreground truncate max-w-[180px]">
+                  {subtextParts.join(' • ')}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'partnerOrganizationName',
+      header: 'Organization',
+      cell: ({ getValue }) => {
+        const name = getValue<string>()
+        return (
+          <div className="flex items-center gap-1.5">
+            <Building2 className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+            <span className="text-sm truncate max-w-[150px]">{name || '—'}</span>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'status',
+      header: 'Status',
+      cell: ({ getValue }) => {
+        const status = getValue<string>()
+        const conf = nominationStatusConfig[status as keyof typeof nominationStatusConfig] ?? {
+          label: status ?? 'Unknown',
+          color: 'bg-gray-100 text-gray-700 border-gray-200',
+          variant: 'outline' as const,
+        }
+        return (
+          <Badge variant={conf.variant} className={conf.color}>
+            {conf.label}
+          </Badge>
+        )
+      },
+    },
+    createCreatedAtColumn<Nomination>({ title: 'Submitted' }),
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => (
+        <ActionsCell nomination={row.original} onActionComplete={onActionComplete} />
+      ),
+    },
+  ]
+}
 
 interface NominationsTableProps {
   nominations: Nomination[]
@@ -41,169 +204,17 @@ interface NominationsTableProps {
   onActionComplete?: () => void
 }
 
-export function NominationsTable({
-  nominations,
-  loading,
-  onActionComplete
-}: NominationsTableProps) {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
-
-  const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
-    if (!field) return ''
-    if (typeof field === 'string') return field
-    return field.en || field.mn || ''
-  }
-
-  if (loading) {
-    return (
-      <div className="rounded-md border">
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Loading nominations...</span>
-        </div>
-      </div>
-    )
-  }
+export function NominationsTable({ nominations, loading, onActionComplete }: NominationsTableProps) {
+  const columns = buildColumns(onActionComplete)
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Park Name</TableHead>
-            <TableHead>Country</TableHead>
-            <TableHead>Partner Org</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead className="w-[70px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {nominations.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
-                No nominations found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            nominations.map((nomination) => {
-              const statusKey = nomination.status as keyof typeof nominationStatusConfig
-              const statusConf = nominationStatusConfig[statusKey]
-
-              return (
-                <TableRow key={nomination.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border">
-                        <MapPin className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium truncate">
-                          {getDisplayName(nomination.parkNames)}
-                        </div>
-                        {nomination.parkWebsites && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {getDisplayName(nomination.parkWebsites)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <div className="text-sm">{nomination.country}</div>
-                  </TableCell>
-
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Building className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm truncate max-w-[150px]">
-                        {nomination.partnerOrganizationName || 'N/A'}
-                      </span>
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <Badge
-                      variant={statusConf.variant}
-                      className={statusConf.color}
-                    >
-                      {statusConf.label}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell>
-                    <div className="flex items-center gap-1 text-sm">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      <span>{formatDate(nomination.createdAt)}</span>
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/nominations/${nomination.id}`}>
-                            <FileText className="mr-2 h-4 w-4" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        {(nomination.status === 'PENDING' || nomination.status === 'UNDER_REVIEW') && (
-                          <>
-                            <DropdownMenuItem asChild>
-                              <div className="flex items-center w-full">
-                                <ApproveButton
-                                  nominationId={nomination.id}
-                                  status={nomination.status}
-                                  onActionComplete={onActionComplete}
-                                />
-                              </div>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <div className="flex items-center w-full">
-                                <RejectButton
-                                  nominationId={nomination.id}
-                                  status={nomination.status}
-                                  onActionComplete={onActionComplete}
-                                />
-                              </div>
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {nomination.status === 'APPROVED' && (
-                          <DropdownMenuItem asChild>
-                            <div className="flex items-center w-full">
-                              <SelectButton
-                                nominationId={nomination.id}
-                                status={nomination.status}
-                                onActionComplete={onActionComplete}
-                              />
-                            </div>
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              )
-            })
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      data={nominations}
+      columns={columns}
+      loading={loading}
+      showIndexColumn={false}
+      emptyMessage="No nominations found."
+      toolbarConfig={{ searchPlaceholder: 'Search nominations...' }}
+    />
   )
 }

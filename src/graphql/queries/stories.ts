@@ -9,7 +9,7 @@ export const GET_STORIES = gql`
     $limit: Int
     $offset: Int
   ) {
-    stories(
+    getStories(
       type: $type
       status: $status
       rallyId: $rallyId
@@ -55,7 +55,7 @@ export const GET_STORIES = gql`
 
 export const GET_STORY = gql`
   query GetStory($id: ID!) {
-    storyById(id: $id) {
+    getStory(id: $id) {
       id
       slug
       title
@@ -100,7 +100,7 @@ export const GET_PUBLISHED_STORIES = gql`
     $limit: Int
     $offset: Int
   ) {
-    publishedStories(
+    getPublishedStories(
       type: $type
       rallyId: $rallyId
       featured: $featured
@@ -138,7 +138,7 @@ export const GET_PUBLISHED_STORIES = gql`
 
 export const GET_FEATURED_STORIES = gql`
   query GetFeaturedStories($limit: Int, $type: String) {
-    featuredStories(limit: $limit, type: $type) {
+    getFeaturedStories(limit: $limit, type: $type) {
       id
       slug
       title
@@ -163,7 +163,7 @@ export const GET_FEATURED_STORIES = gql`
 
 export const GET_STORY_STATS = gql`
   query GetStoryStats {
-    storyStats {
+    getStoryStats {
       total
       published
       draft

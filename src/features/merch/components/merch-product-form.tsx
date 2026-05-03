@@ -19,14 +19,8 @@ import {
   SingleImageUpload,
   SingleImageUploadRef,
 } from "@/components/single-image-upload";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Loader2, Save } from "lucide-react";
+import { FormSection } from "@/components/admin";
 import { VariantBuilder } from "./variant-builder";
 import {
   CREATE_MERCH_PRODUCT,
@@ -123,7 +117,8 @@ export function MerchProductForm({
       });
 
       if (initialData.options) {
-        setOptions(initialData.options as ProductOption[]);
+        const rawOpts = initialData.options as ProductOption[]
+        setOptions(rawOpts.map((opt, i) => ({ ...opt, id: opt.id || `option-${i}` })))
       }
 
       if (initialData.variants) {
@@ -228,7 +223,6 @@ export function MerchProductForm({
 
       router.push("/merch");
     } catch (error: unknown) {
-      console.error("Failed to save product:", error);
       if (error instanceof Error) {
         toast.error(
           error.message ||
@@ -241,16 +235,11 @@ export function MerchProductForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Product Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Information</CardTitle>
-          <CardDescription>
-            {isReadOnly ? "Product details" : "Add product details"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <FormSection
+        title="Product Information"
+        description={isReadOnly ? "Product details" : "Add product details"}
+      >
           <div className="space-y-2">
             <Label htmlFor={`name-${language}`}>Product Name *</Label>
             <Input
@@ -319,22 +308,18 @@ export function MerchProductForm({
               disabled={isReadOnly}
             />
           </div>
-        </CardContent>
-      </Card>
+      </FormSection>
 
-      {/* Featured Image */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Featured Image</CardTitle>
-          <CardDescription>
-            {isReadOnly
-              ? "Product featured image"
-              : mode === "edit"
-              ? "Update product image (leave empty to keep current image)"
-              : "Image will be uploaded when you save the product"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+      <FormSection
+        title="Featured Image"
+        description={
+          isReadOnly
+            ? "Product featured image"
+            : mode === "edit"
+            ? "Update product image (leave empty to keep current image)"
+            : "Image will be uploaded when you save the product"
+        }
+      >
           {isReadOnly && initialData?.featuredImage ? (
             <div className="relative w-full max-w-xs aspect-square overflow-hidden rounded-lg border bg-muted">
               <img
@@ -352,20 +337,16 @@ export function MerchProductForm({
           ) : (
             <div className="text-sm text-muted-foreground">No image</div>
           )}
-        </CardContent>
-      </Card>
+      </FormSection>
 
-      {/* Pricing */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pricing</CardTitle>
-          <CardDescription>
-            {options.length > 0
-              ? "Base price - variants can have different prices"
-              : "Set product pricing"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <FormSection
+        title="Pricing"
+        description={
+          options.length > 0
+            ? "Base price - variants can have different prices"
+            : "Set product pricing"
+        }
+      >
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="price">Price *</Label>
@@ -421,8 +402,7 @@ export function MerchProductForm({
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </FormSection>
 
       {/* Variants */}
       <VariantBuilder
@@ -436,17 +416,11 @@ export function MerchProductForm({
 
       {/* Inventory - Only show if no variants */}
       {options.length === 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Inventory</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="trackInventory">Track Inventory</Label>
-                <p className="text-sm text-muted-foreground">
-                  Enable inventory tracking for this product
-                </p>
+        <FormSection title="Inventory">
+            <div className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium">Track Inventory</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Enable inventory tracking for this product</p>
               </div>
               <Switch
                 id="trackInventory"
@@ -493,16 +467,10 @@ export function MerchProductForm({
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+        </FormSection>
       )}
 
-      {/* Product Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <FormSection title="Product Settings">
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
             <Select
@@ -524,12 +492,10 @@ export function MerchProductForm({
             </Select>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="isFeatured">Featured Product</Label>
-              <p className="text-sm text-muted-foreground">
-                Display this product on the homepage
-              </p>
+          <div className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium">Featured Product</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Display this product on the homepage</p>
             </div>
             <Switch
               id="isFeatured"
@@ -539,24 +505,24 @@ export function MerchProductForm({
               }
             />
           </div>
-        </CardContent>
-      </Card>
+      </FormSection>
 
-      {/* Form Actions */}
-      <div className="flex items-center justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <Save className="mr-2 h-4 w-4" />
-          {mode === "create" ? "Create Product" : "Update Product"}
-        </Button>
+      <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center gap-3 py-4">
+          <Button type="submit" disabled={isSubmitting} className="min-w-[160px]">
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Save className="mr-2 h-4 w-4" />
+            {mode === "create" ? "Create Product" : "Update Product"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     </form>
   );

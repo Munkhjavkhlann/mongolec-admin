@@ -13,14 +13,14 @@ import {
 } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Check, X, Clock, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useMutation } from '@apollo/client/react'
 import {
   APPROVE_APPLICATION,
   REJECT_APPLICATION,
   WAITLIST_APPLICATION,
   CONFIRM_APPLICATION,
-  UPDATE_APPLICATION_PAYMENT_STATUS,
+  CHANGE_APPLICATION_PAYMENT_STATUS,
 } from '@/graphql/mutations/applications'
 import { toast } from 'sonner'
 import {
@@ -31,15 +31,31 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-interface ApplicationActionsProps {
+type PaymentOption = 'PENDING' | 'DEPOSIT_PAID' | 'FULLY_PAID'
+
+function paymentToArgs(option: PaymentOption) {
+  if (option === 'FULLY_PAID') return { depositPaid: true, fullyPaid: true }
+  if (option === 'DEPOSIT_PAID') return { depositPaid: true, fullyPaid: false }
+  return { depositPaid: false, fullyPaid: false }
+}
+
+function argsToPayment(depositPaid?: boolean, fullyPaid?: boolean): PaymentOption {
+  if (fullyPaid) return 'FULLY_PAID'
+  if (depositPaid) return 'DEPOSIT_PAID'
+  return 'PENDING'
+}
+
+// ─── Approve ───────────────────────────────────────────────────────────────
+
+interface ApproveDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
   applicationId: string
-  status: string
   onActionComplete?: () => void
 }
 
-export function ApproveButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+export function ApproveDialog({ open, onOpenChange, applicationId, onActionComplete }: ApproveDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState('')
   const [approveApplication, { loading }] = useMutation(APPROVE_APPLICATION, {
     refetchQueries: ['GetApplications', 'GetApplication', 'GetApplicationStats'],
@@ -47,153 +63,116 @@ export function ApproveButton({ applicationId, onActionComplete }: ApplicationAc
 
   const handleApprove = async () => {
     try {
-      await approveApplication({
-        variables: {
-          id: applicationId,
-          notes: notes || undefined,
-        },
-      })
-      toast.success('Application approved successfully')
+      await approveApplication({ variables: { id: applicationId, notes: notes || undefined } })
+      toast.success('Application approved')
       router.refresh()
-      setOpen(false)
+      onOpenChange(false)
       setNotes('')
       onActionComplete?.()
-    } catch (error) {
-      console.error('Failed to approve application:', error)
+    } catch {
       toast.error('Failed to approve application')
     }
   }
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="default"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-      >
-        <Check className="mr-2 h-4 w-4" />
-        Approve
-      </Button>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Approve Application</DialogTitle>
-            <DialogDescription>
-              Add any notes for approving this application
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Add any notes about this approval..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button onClick={handleApprove} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Approve Application
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Approve Application</DialogTitle>
+          <DialogDescription>Optionally add notes for this approval.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-4">
+          <Label htmlFor="approve-notes">Notes (optional)</Label>
+          <Textarea
+            id="approve-notes"
+            placeholder="Add notes about this approval..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+          <Button onClick={handleApprove} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Approve
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-export function RejectButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+// ─── Reject ────────────────────────────────────────────────────────────────
+
+interface RejectDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  applicationId: string
+  onActionComplete?: () => void
+}
+
+export function RejectDialog({ open, onOpenChange, applicationId, onActionComplete }: RejectDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
   const [reason, setReason] = useState('')
   const [rejectApplication, { loading }] = useMutation(REJECT_APPLICATION, {
     refetchQueries: ['GetApplications', 'GetApplication', 'GetApplicationStats'],
   })
 
   const handleReject = async () => {
-    if (!reason.trim()) {
-      toast.error('Please provide a reason for rejection')
-      return
-    }
-
+    if (!reason.trim()) { toast.error('Please provide a reason'); return }
     try {
-      await rejectApplication({
-        variables: {
-          id: applicationId,
-          reason,
-        },
-      })
-      toast.success('Application rejected successfully')
+      await rejectApplication({ variables: { id: applicationId, reason } })
+      toast.success('Application rejected')
       router.refresh()
-      setOpen(false)
+      onOpenChange(false)
       setReason('')
       onActionComplete?.()
-    } catch (error) {
-      console.error('Failed to reject application:', error)
+    } catch {
       toast.error('Failed to reject application')
     }
   }
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="destructive"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-      >
-        <X className="mr-2 h-4 w-4" />
-        Reject
-      </Button>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject Application</DialogTitle>
-            <DialogDescription>
-              Please provide a reason for rejecting this application
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="reason">Reason *</Label>
-              <Textarea
-                id="reason"
-                placeholder="Explain why this application is being rejected..."
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                rows={3}
-                required
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Reject Application
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Reject Application</DialogTitle>
+          <DialogDescription>Provide a reason for rejecting this application.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-4">
+          <Label htmlFor="reject-reason">Reason *</Label>
+          <Textarea
+            id="reject-reason"
+            placeholder="Explain why this application is being rejected..."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={3}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+          <Button variant="destructive" onClick={handleReject} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Reject
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-export function WaitlistButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+// ─── Waitlist ──────────────────────────────────────────────────────────────
+
+interface WaitlistDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  applicationId: string
+  onActionComplete?: () => void
+}
+
+export function WaitlistDialog({ open, onOpenChange, applicationId, onActionComplete }: WaitlistDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState('')
   const [waitlistApplication, { loading }] = useMutation(WAITLIST_APPLICATION, {
     refetchQueries: ['GetApplications', 'GetApplication', 'GetApplicationStats'],
@@ -201,71 +180,56 @@ export function WaitlistButton({ applicationId, onActionComplete }: ApplicationA
 
   const handleWaitlist = async () => {
     try {
-      await waitlistApplication({
-        variables: {
-          id: applicationId,
-          notes: notes || undefined,
-        },
-      })
-      toast.success('Application added to waitlist successfully')
+      await waitlistApplication({ variables: { id: applicationId, notes: notes || undefined } })
+      toast.success('Application added to waitlist')
       router.refresh()
-      setOpen(false)
+      onOpenChange(false)
       setNotes('')
       onActionComplete?.()
-    } catch (error) {
-      console.error('Failed to waitlist application:', error)
+    } catch {
       toast.error('Failed to waitlist application')
     }
   }
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-      >
-        <Clock className="mr-2 h-4 w-4" />
-        Waitlist
-      </Button>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Waitlist Application</DialogTitle>
-            <DialogDescription>
-              Add any notes for waitlisting this application
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                placeholder="Add any notes about this waitlist decision..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button onClick={handleWaitlist} disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add to Waitlist
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add to Waitlist</DialogTitle>
+          <DialogDescription>Optionally add notes for this waitlist decision.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-4">
+          <Label htmlFor="waitlist-notes">Notes (optional)</Label>
+          <Textarea
+            id="waitlist-notes"
+            placeholder="Add notes about this waitlist decision..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+          <Button onClick={handleWaitlist} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Add to Waitlist
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-export function ConfirmButton({ applicationId, onActionComplete }: ApplicationActionsProps) {
+// ─── Confirm ───────────────────────────────────────────────────────────────
+
+interface ConfirmDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  applicationId: string
+  onActionComplete?: () => void
+}
+
+export function ConfirmDialog({ open, onOpenChange, applicationId, onActionComplete }: ConfirmDialogProps) {
   const router = useRouter()
   const [confirmApplication, { loading }] = useMutation(CONFIRM_APPLICATION, {
     refetchQueries: ['GetApplications', 'GetApplication', 'GetApplicationStats'],
@@ -273,109 +237,162 @@ export function ConfirmButton({ applicationId, onActionComplete }: ApplicationAc
 
   const handleConfirm = async () => {
     try {
-      await confirmApplication({
-        variables: {
-          id: applicationId,
-        },
-      })
-      toast.success('Application confirmed successfully')
+      await confirmApplication({ variables: { id: applicationId } })
+      toast.success('Application confirmed')
       router.refresh()
+      onOpenChange(false)
       onActionComplete?.()
-    } catch (error) {
-      console.error('Failed to confirm application:', error)
+    } catch {
       toast.error('Failed to confirm application')
     }
   }
 
   return (
-    <Button
-      size="sm"
-      variant="default"
-      onClick={handleConfirm}
-      disabled={loading}
-    >
-      <Check className="mr-2 h-4 w-4" />
-      Confirm
-    </Button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirm Application</DialogTitle>
+          <DialogDescription>Confirm this applicant's participation in the rally.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+          <Button onClick={handleConfirm} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Confirm
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
-export function UpdatePaymentStatusButton({
+// ─── Update Payment ────────────────────────────────────────────────────────
+
+interface UpdatePaymentDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  applicationId: string
+  depositPaid?: boolean
+  fullyPaid?: boolean
+  onActionComplete?: () => void
+}
+
+export function UpdatePaymentDialog({
+  open,
+  onOpenChange,
   applicationId,
-  currentStatus,
+  depositPaid,
+  fullyPaid,
   onActionComplete,
-}: ApplicationActionsProps & { currentStatus: string }) {
+}: UpdatePaymentDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [status, setStatus] = useState(currentStatus)
-  const [updatePaymentStatus, { loading }] = useMutation(UPDATE_APPLICATION_PAYMENT_STATUS, {
+  const currentOption = argsToPayment(depositPaid, fullyPaid)
+  const [selected, setSelected] = useState<PaymentOption>(currentOption)
+  const [changePayment, { loading }] = useMutation(CHANGE_APPLICATION_PAYMENT_STATUS, {
     refetchQueries: ['GetApplications', 'GetApplication'],
   })
 
   const handleUpdate = async () => {
     try {
-      await updatePaymentStatus({
-        variables: {
-          id: applicationId,
-          paymentStatus: status,
-        },
-      })
-      toast.success('Payment status updated successfully')
+      await changePayment({ variables: { id: applicationId, ...paymentToArgs(selected) } })
+      toast.success('Payment status updated')
       router.refresh()
-      setOpen(false)
+      onOpenChange(false)
       onActionComplete?.()
-    } catch (error) {
-      console.error('Failed to update payment status:', error)
+    } catch {
       toast.error('Failed to update payment status')
     }
   }
 
   return (
-    <>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-      >
-        Update Payment
-      </Button>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Update Payment Status</DialogTitle>
+          <DialogDescription>Set the current payment status for this application.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 py-4">
+          <Label htmlFor="payment-status">Payment Status</Label>
+          <Select value={selected} onValueChange={(v) => setSelected(v as PaymentOption)}>
+            <SelectTrigger id="payment-status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="PENDING">Pending</SelectItem>
+              <SelectItem value="DEPOSIT_PAID">Deposit Paid</SelectItem>
+              <SelectItem value="FULLY_PAID">Fully Paid</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
+          <Button onClick={handleUpdate} disabled={loading || selected === currentOption}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Update
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Update Payment Status</DialogTitle>
-            <DialogDescription>
-              Update the payment status for this application
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="payment-status">Payment Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger id="payment-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="PENDING">Pending</SelectItem>
-                  <SelectItem value="DEPOSIT_PAID">Deposit Paid</SelectItem>
-                  <SelectItem value="FULLY_PAID">Fully Paid</SelectItem>
-                  <SelectItem value="REFUNDED">Refunded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={loading}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdate} disabled={loading || status === currentStatus}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Update Status
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+// ─── Legacy compat exports (for detail page usage) ─────────────────────────
+
+interface LegacyProps {
+  applicationId: string
+  status: string
+  onActionComplete?: () => void
+}
+
+export function ApproveButton({ applicationId, onActionComplete }: LegacyProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>Approve</Button>
+      <ApproveDialog open={open} onOpenChange={setOpen} applicationId={applicationId} onActionComplete={onActionComplete} />
+    </>
+  )
+}
+
+export function RejectButton({ applicationId, onActionComplete }: LegacyProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="sm" variant="destructive" onClick={() => setOpen(true)}>Reject</Button>
+      <RejectDialog open={open} onOpenChange={setOpen} applicationId={applicationId} onActionComplete={onActionComplete} />
+    </>
+  )
+}
+
+export function WaitlistButton({ applicationId, onActionComplete }: LegacyProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Waitlist</Button>
+      <WaitlistDialog open={open} onOpenChange={setOpen} applicationId={applicationId} onActionComplete={onActionComplete} />
+    </>
+  )
+}
+
+export function ConfirmButton({ applicationId, onActionComplete }: LegacyProps) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="sm" onClick={() => setOpen(true)}>Confirm</Button>
+      <ConfirmDialog open={open} onOpenChange={setOpen} applicationId={applicationId} onActionComplete={onActionComplete} />
+    </>
+  )
+}
+
+export function UpdatePaymentStatusButton({
+  applicationId,
+  onActionComplete,
+}: LegacyProps & { currentStatus?: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)}>Update Payment</Button>
+      <UpdatePaymentDialog open={open} onOpenChange={setOpen} applicationId={applicationId} onActionComplete={onActionComplete} />
     </>
   )
 }

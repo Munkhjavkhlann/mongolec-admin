@@ -13,5 +13,7 @@ export function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ['/(dashboard)/:path*'],
+  matcher: [
+    '/((?!sign-in|sign-up|forgot-password|_next/static|_next/image|favicon.ico).*)',
+  ],
 }

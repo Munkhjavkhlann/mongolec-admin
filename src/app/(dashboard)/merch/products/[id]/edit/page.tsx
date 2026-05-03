@@ -4,13 +4,13 @@ import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useQuery } from '@apollo/client/react'
 import { MerchProductForm } from '@/features/merch/components/merch-product-form'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GET_MERCH_PRODUCT_BY_ID } from '@/graphql/queries/merch'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, Package } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PageHeader, EmptyState } from '@/components/admin'
 
 interface GetMerchProductByIdData {
-  merchProductById: any;
+  merchProductById: any
 }
 
 export default function MerchProductEditPage() {
@@ -25,56 +25,42 @@ export default function MerchProductEditPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-6 max-w-5xl">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Loading product...</span>
-        </div>
+      <div className="max-w-4xl mx-auto">
+        <EmptyState icon={Package} title="Loading product…" className="py-20" />
       </div>
     )
   }
 
   if (error || !data?.merchProductById) {
     return (
-      <div className="container mx-auto py-6 max-w-5xl">
+      <div className="space-y-4 max-w-4xl mx-auto">
+        <PageHeader title="Edit Product" backHref="/merch" />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error?.message || 'Product not found'}
-          </AlertDescription>
+          <AlertDescription>{error?.message || 'Product not found'}</AlertDescription>
         </Alert>
       </div>
     )
   }
 
   const product = data.merchProductById
+  const title = typeof product.name === 'string' ? product.name : product.name?.en || 'Edit Product'
 
   return (
-    <div className="container mx-auto py-6 max-w-5xl">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Edit Product</h1>
-            <p className="text-muted-foreground mt-2">
-              Update product information and settings
-            </p>
-          </div>
-
-          <Tabs value={language} onValueChange={(value) => setLanguage(value as 'en' | 'mn')}>
-            <TabsList>
-              <TabsTrigger value="en">English</TabsTrigger>
-              <TabsTrigger value="mn">Монгол</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
-        <MerchProductForm
-          mode="edit"
-          language={language}
-          productId={productId}
-          initialData={product}
-        />
-      </div>
+    <div className="space-y-5 max-w-4xl mx-auto">
+      <PageHeader
+        title={title}
+        description="Update product information and settings"
+        backHref="/merch"
+        lang={language}
+        onLangChange={setLanguage}
+      />
+      <MerchProductForm
+        mode="edit"
+        language={language}
+        productId={productId}
+        initialData={product}
+      />
     </div>
   )
 }

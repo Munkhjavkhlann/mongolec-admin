@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { GetMeDocument } from "@/__generated__/graphql";
+import { GET_ME } from "@/graphql/queries/auth";
 import { useAuthStore } from "@/stores/auth-store";
 import { useQuery } from "@apollo/client/react";
 
@@ -10,6 +10,20 @@ type AuthContextType = {
   isLoading: boolean;
   isAuthenticated: boolean;
 };
+
+interface GetMeData {
+  me: {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+    isActive: boolean
+    createdAt: string
+    updatedAt: string
+    tenant?: { id: string; slug: string; name: string } | null
+    roles?: { id: string; role: { id: string; name: string } }[]
+  } | null
+}
 
 const AuthContext = createContext<AuthContextType>({
   isLoading: true,
@@ -39,8 +53,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     data: userData,
     error,
     loading,
-  } = useQuery(GetMeDocument, {
-    errorPolicy: "all", // Don't throw on GraphQL errors
+  } = useQuery<GetMeData>(GET_ME, {
+    fetchPolicy: "cache-first",
+    errorPolicy: "all",
     notifyOnNetworkStatusChange: true,
   });
 

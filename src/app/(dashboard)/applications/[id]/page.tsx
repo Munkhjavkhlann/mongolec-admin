@@ -1,51 +1,37 @@
 'use client'
 
 import { useQuery } from '@apollo/client/react'
-import { useParams, useRouter } from 'next/navigation'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
-  Loader2,
-  ArrowLeft,
-  User,
-  Bike,
-  Heart,
-  Calendar,
-  MapPin,
-  Phone,
-  Mail,
-  FileText,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  Clock,
+  Bike, Heart, Calendar, MapPin, Phone, Mail, FileText,
+  DollarSign, CheckCircle, XCircle, Clock, AlertCircle, User,
 } from 'lucide-react'
 import { GET_APPLICATION } from '@/graphql/queries/applications'
-import { AlertCircle } from 'lucide-react'
-
-interface RallyInfo {
-  id: string
-  title: string | { en: string; mn: string }
-  slug: string
-  startDate: string
-  endDate: string
-  location: string | { en: string; mn: string }
-  maxParticipants: number
-  currentParticipants: number
-}
+import Link from 'next/link'
+import {
+  ApproveButton,
+  RejectButton,
+  WaitlistButton,
+  ConfirmButton,
+  UpdatePaymentStatusButton,
+} from '@/features/applications/components/application-actions'
+import { applicationStatusConfig, paymentStatusConfig } from '@/features/applications/types'
+import { PageHeader, FormSection, DetailField, EmptyState } from '@/components/admin'
 
 interface ApplicationDetail {
   id: string
-  rally: RallyInfo
+  rally: {
+    id: string
+    title: string | { en: string; mn: string }
+    slug: string
+    startDate: string
+    endDate: string
+    location: string | { en: string; mn: string }
+    maxParticipants: number
+    currentParticipants: number
+  }
   status: string
   isRider: boolean
   hasMotorcycleLicense?: boolean
@@ -80,21 +66,24 @@ interface ApplicationDetail {
 }
 
 interface GetApplicationQuery {
-  applicationById: ApplicationDetail
+  getApplication: ApplicationDetail
 }
-import Link from 'next/link'
-import {
-  ApproveButton,
-  RejectButton,
-  WaitlistButton,
-  ConfirmButton,
-  UpdatePaymentStatusButton,
-} from '@/features/applications/components/application-actions'
-import { applicationStatusConfig, paymentStatusConfig } from '@/features/applications/types'
+
+const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
+  if (!field) return ''
+  if (typeof field === 'string') return field
+  return field.en || field.mn || ''
+}
+
+const formatDate = (dateString?: string) => {
+  if (!dateString) return undefined
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  })
+}
 
 export default function ApplicationDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const applicationId = params.id as string
 
   const { data, loading, error, refetch } = useQuery<GetApplicationQuery>(GET_APPLICATION, {
@@ -102,470 +91,219 @@ export default function ApplicationDetailPage() {
     fetchPolicy: 'cache-and-network',
   })
 
-  const application = data?.applicationById
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
-
-  const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
-    if (!field) return ''
-    if (typeof field === 'string') return field
-    return field.en || field.mn || ''
-  }
+  const application = data?.getApplication
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Loading application...</span>
-        </div>
+      <div className="p-6">
+        <EmptyState icon={FileText} title="Loading application…" className="py-20" />
       </div>
     )
   }
 
   if (error || !application) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 p-6">
+        <PageHeader title="Application" backHref="/applications" />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error?.message || 'Application not found'}
-          </AlertDescription>
+          <AlertDescription>{error?.message || 'Application not found'}</AlertDescription>
         </Alert>
-        <Button variant="outline" asChild>
-          <Link href="/applications">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Applications
-          </Link>
-        </Button>
       </div>
     )
   }
 
-  const statusKey = application.status as keyof typeof applicationStatusConfig
-  const statusConf = applicationStatusConfig[statusKey]
-
-  // Derive payment status from depositPaid and fullyPaid fields
+  const statusConf = applicationStatusConfig[application.status as keyof typeof applicationStatusConfig]
   const getPaymentStatus = () => {
     if (application.fullyPaid) return 'FULLY_PAID'
     if (application.depositPaid) return 'DEPOSIT_PAID'
     return 'PENDING'
   }
-
-  const paymentKey = getPaymentStatus() as keyof typeof paymentStatusConfig
-  const paymentConf = paymentStatusConfig[paymentKey]
+  const paymentConf = paymentStatusConfig[getPaymentStatus() as keyof typeof paymentStatusConfig]
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/applications">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {application.firstName} {application.lastName}
-            </h1>
-            <p className="text-muted-foreground">{application.email}</p>
+    <div className="space-y-5 p-6">
+      <PageHeader
+        title={`${application.firstName} ${application.lastName}`}
+        description={application.email}
+        backHref="/applications"
+        badge={
+          <div className="flex gap-1.5">
+            <Badge variant={statusConf.variant} className={statusConf.color}>
+              {statusConf.label}
+            </Badge>
+            <Badge variant={paymentConf.variant} className={paymentConf.color}>
+              {paymentConf.label}
+            </Badge>
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Badge variant={statusConf.variant} className={statusConf.color}>
-            {statusConf.label}
-          </Badge>
-          <Badge variant={paymentConf.variant} className={paymentConf.color}>
-            {paymentConf.label}
-          </Badge>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Action Buttons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions</CardTitle>
-          <CardDescription>Review and update application status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {application.status === 'PENDING' && (
-              <>
-                <ApproveButton
-                  applicationId={application.id}
-                  status={application.status}
-                  onActionComplete={() => refetch()}
-                />
-                <RejectButton
-                  applicationId={application.id}
-                  status={application.status}
-                  onActionComplete={() => refetch()}
-                />
-                <WaitlistButton
-                  applicationId={application.id}
-                  status={application.status}
-                  onActionComplete={() => refetch()}
-                />
-              </>
-            )}
-            {application.status === 'APPROVED' && (
-              <ConfirmButton
-                applicationId={application.id}
-                status={application.status}
-                onActionComplete={() => refetch()}
-              />
-            )}
-            <UpdatePaymentStatusButton
-              applicationId={application.id}
-              status={application.status}
-              currentStatus={getPaymentStatus()}
-              onActionComplete={() => refetch()}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Actions */}
+      <FormSection title="Actions" description="Review and update application status">
+        <div className="flex flex-wrap gap-2">
+          {application.status === 'PENDING' && (
+            <>
+              <ApproveButton applicationId={application.id} status={application.status} onActionComplete={() => refetch()} />
+              <RejectButton applicationId={application.id} status={application.status} onActionComplete={() => refetch()} />
+              <WaitlistButton applicationId={application.id} status={application.status} onActionComplete={() => refetch()} />
+            </>
+          )}
+          {application.status === 'APPROVED' && (
+            <ConfirmButton applicationId={application.id} status={application.status} onActionComplete={() => refetch()} />
+          )}
+          <UpdatePaymentStatusButton
+            applicationId={application.id}
+            status={application.status}
+            currentStatus={getPaymentStatus()}
+            onActionComplete={() => refetch()}
+          />
+        </div>
+      </FormSection>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Information */}
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
           {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Personal Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Full Name</div>
-                  <div className="text-lg">
-                    {application.firstName} {application.lastName}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Email</div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{application.email}</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Phone</div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{application.phone}</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Birthdate</div>
-                  <div>{formatDate(application.birthdate)}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Country</div>
-                  <div>{application.country}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">City</div>
-                  <div>{application.city}</div>
-                </div>
-              </div>
-              {application.address && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Address</div>
-                  <div>{application.address}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <FormSection title="Personal Information">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailField label="Full Name" value={`${application.firstName} ${application.lastName}`} icon={User} />
+              <DetailField label="Email" value={application.email} icon={Mail} />
+              <DetailField label="Phone" value={application.phone} icon={Phone} />
+              <DetailField label="Birthdate" value={formatDate(application.birthdate)} icon={Calendar} />
+              <DetailField label="Country" value={application.country} icon={MapPin} />
+              <DetailField label="City" value={application.city} />
+            </div>
+            {application.address && (
+              <DetailField label="Address" value={application.address} className="mt-2" />
+            )}
+          </FormSection>
 
-          {/* Participation Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {application.isRider ? (
-                  <Bike className="h-5 w-5" />
-                ) : (
-                  <Heart className="h-5 w-5" />
-                )}
-                Participation Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                {application.isRider ? (
-                  <>
-                    <Bike className="h-5 w-5 text-blue-500" />
-                    <span className="text-lg font-medium">Rider</span>
-                  </>
-                ) : (
-                  <>
-                    <Heart className="h-5 w-5 text-pink-500" />
-                    <span className="text-lg font-medium">Supporter</span>
-                  </>
-                )}
-              </div>
-
-              {application.isRider && (
+          {/* Participation */}
+          <FormSection title="Participation Details">
+            <div className="flex items-center gap-2 mb-3">
+              {application.isRider ? (
                 <>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground">
-                        Motorcycle License
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {application.hasMotorcycleLicense ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-red-500" />
-                        )}
-                        <span>{application.hasMotorcycleLicense ? 'Yes' : 'No'}</span>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-muted-foreground">
-                        Riding Experience
-                      </div>
-                      <div>{application.ridingExperience || 'Not specified'}</div>
-                    </div>
-                  </div>
+                  <Bike className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium text-blue-600">Rider</span>
+                </>
+              ) : (
+                <>
+                  <Heart className="h-4 w-4 text-pink-500" />
+                  <span className="text-sm font-medium text-pink-600">Supporter</span>
                 </>
               )}
-            </CardContent>
-          </Card>
-
-          {/* Medical Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Medical Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Medical Professional
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {application.isMedicalProfessional ? (
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500" />
-                    )}
-                    <span>{application.isMedicalProfessional ? 'Yes' : 'No'}</span>
-                  </div>
-                </div>
+            </div>
+            {application.isRider && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <DetailField
+                  label="Motorcycle License"
+                  value={
+                    <span className="flex items-center gap-1.5">
+                      {application.hasMotorcycleLicense
+                        ? <><CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> Yes</>
+                        : <><XCircle className="h-3.5 w-3.5 text-red-500" /> No</>}
+                    </span>
+                  }
+                />
+                <DetailField label="Riding Experience" value={application.ridingExperience} />
               </div>
-              {application.medicalConditions && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Medical Conditions
-                  </div>
-                  <div>{application.medicalConditions}</div>
-                </div>
-              )}
-              {application.dietaryRestrictions && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Dietary Restrictions
-                  </div>
-                  <div>{application.dietaryRestrictions}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </FormSection>
+
+          {/* Medical */}
+          <FormSection title="Medical Information">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailField
+                label="Medical Professional"
+                value={
+                  <span className="flex items-center gap-1.5">
+                    {application.isMedicalProfessional
+                      ? <><CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> Yes</>
+                      : <><XCircle className="h-3.5 w-3.5 text-red-500" /> No</>}
+                  </span>
+                }
+              />
+            </div>
+            {application.medicalConditions && (
+              <DetailField label="Medical Conditions" value={application.medicalConditions} className="mt-2" />
+            )}
+            {application.dietaryRestrictions && (
+              <DetailField label="Dietary Restrictions" value={application.dietaryRestrictions} className="mt-2" />
+            )}
+          </FormSection>
 
           {/* Emergency Contact */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Emergency Contact</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Name</div>
-                  <div className="text-lg">{application.emergencyContactFirstName} {application.emergencyContactLastName}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Relationship</div>
-                  <div>{application.emergencyContactRelationship}</div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Phone</div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{application.emergencyContactPhone}</span>
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Email</div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{application.emergencyContactEmail}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <FormSection title="Emergency Contact">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailField label="Name" value={`${application.emergencyContactFirstName} ${application.emergencyContactLastName}`} />
+              <DetailField label="Relationship" value={application.emergencyContactRelationship} />
+              <DetailField label="Phone" value={application.emergencyContactPhone} icon={Phone} />
+              <DetailField label="Email" value={application.emergencyContactEmail} icon={Mail} />
+            </div>
+          </FormSection>
 
-          {/* Application Questions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Application Responses
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          {/* Application Responses */}
+          {(application.motivation || application.travelExperience || application.futureLocations) && (
+            <FormSection title="Application Responses">
               {application.motivation && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Motivation</div>
-                  <div className="mt-1 whitespace-pre-wrap">{application.motivation}</div>
-                </div>
+                <DetailField label="Motivation" value={<span className="whitespace-pre-wrap">{application.motivation}</span>} />
               )}
               {application.travelExperience && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Travel Experience
-                  </div>
-                  <div className="mt-1 whitespace-pre-wrap">{application.travelExperience}</div>
-                </div>
+                <DetailField label="Travel Experience" value={<span className="whitespace-pre-wrap">{application.travelExperience}</span>} className="mt-3" />
               )}
               {application.futureLocations && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Future Locations of Interest
-                  </div>
-                  <div className="mt-1 whitespace-pre-wrap">{application.futureLocations}</div>
-                </div>
+                <DetailField label="Future Locations of Interest" value={<span className="whitespace-pre-wrap">{application.futureLocations}</span>} className="mt-3" />
               )}
-            </CardContent>
-          </Card>
+            </FormSection>
+          )}
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Rally Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Selected Rally
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Rally</div>
-                <div className="text-lg font-medium">
-                  {getDisplayName(application.rally?.title)}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Location</div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{getDisplayName(application.rally?.location)}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Start Date</div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{formatDate(application.rally?.startDate)}</span>
-                </div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">End Date</div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{formatDate(application.rally?.endDate)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="space-y-5">
+          {/* Rally */}
+          <FormSection title="Selected Rally">
+            <div className="space-y-3">
+              <DetailField label="Rally" value={getDisplayName(application.rally?.title)} />
+              <DetailField label="Location" value={getDisplayName(application.rally?.location)} icon={MapPin} />
+              <DetailField label="Start Date" value={formatDate(application.rally?.startDate)} icon={Calendar} />
+              <DetailField label="End Date" value={formatDate(application.rally?.endDate)} icon={Calendar} />
+            </div>
+          </FormSection>
 
-          {/* Payment Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Payment Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-muted-foreground">Deposit Paid</div>
-                <div className="flex items-center gap-2">
-                  {application.depositPaid ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <XCircle className="h-4 w-4 text-red-500" />
-                  )}
-                  <span>{application.depositPaid ? 'Yes' : 'No'}</span>
-                </div>
-              </div>
+          {/* Payment */}
+          <FormSection title="Payment Details">
+            <div className="space-y-3">
+              <DetailField
+                label="Deposit Paid"
+                value={
+                  <span className="flex items-center gap-1.5">
+                    {application.depositPaid
+                      ? <><CheckCircle className="h-3.5 w-3.5 text-emerald-500" /> Yes</>
+                      : <><XCircle className="h-3.5 w-3.5 text-red-500" /> No</>}
+                  </span>
+                }
+              />
               {application.depositAmount && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Deposit Amount
-                  </div>
-                  <div className="text-lg">${application.depositAmount}</div>
-                </div>
+                <DetailField label="Deposit Amount" value={`$${application.depositAmount}`} icon={DollarSign} />
               )}
               {application.totalAmount && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Total Amount</div>
-                  <div className="text-lg">${application.totalAmount}</div>
-                </div>
+                <DetailField label="Total Amount" value={`$${application.totalAmount}`} icon={DollarSign} />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </FormSection>
 
-          {/* Application Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Application Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  Applied On
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{formatDate(application.createdAt)}</span>
-                </div>
-              </div>
+          {/* Meta */}
+          <FormSection title="Application Details">
+            <div className="space-y-3">
+              <DetailField label="Applied On" value={formatDate(application.createdAt)} icon={Calendar} />
               {application.reviewedAt && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Reviewed On
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{formatDate(application.reviewedAt)}</span>
-                  </div>
-                </div>
+                <DetailField label="Reviewed On" value={formatDate(application.reviewedAt)} icon={Clock} />
               )}
               {application.reviewedBy && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Reviewed By
-                  </div>
-                  <div>{application.reviewedBy}</div>
-                </div>
+                <DetailField label="Reviewed By" value={application.reviewedBy} />
               )}
-            </CardContent>
-          </Card>
-
+            </div>
+          </FormSection>
         </div>
       </div>
     </div>

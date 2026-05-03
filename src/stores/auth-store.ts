@@ -7,8 +7,10 @@ type User = {
   lastName: string
   email: string
   isActive: boolean
-  createdAt?: any
-  updatedAt?: any
+  createdAt?: string
+  updatedAt?: string
+  tenant?: { id: string; slug: string; name: string } | null
+  roles?: { id: string; role: { id: string; name: string } }[]
 }
 
 type AuthActions = {

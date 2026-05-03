@@ -1,49 +1,29 @@
 import { gql } from '@apollo/client'
+import { TENANT_FIELDS } from '../fragments/tenant'
 
 export const GET_TENANTS = gql`
+  ${TENANT_FIELDS}
   query GetTenants {
     tenants {
-      id
-      name
-      slug
-      domain
-      isActive
-      status
-      plan
-      createdAt
-      updatedAt
+      ...TenantFields
     }
   }
 `
 
 export const GET_TENANT_BY_ID = gql`
+  ${TENANT_FIELDS}
   query GetTenantById($id: ID!) {
-    tenantById(id: $id) {
-      id
-      name
-      slug
-      domain
-      isActive
-      status
-      plan
-      createdAt
-      updatedAt
+    getTenantById(id: $id) {
+      ...TenantFields
     }
   }
 `
 
 export const GET_TENANT_BY_SLUG = gql`
+  ${TENANT_FIELDS}
   query GetTenantBySlug($slug: String!) {
-    tenantBySlug(slug: $slug) {
-      id
-      name
-      slug
-      domain
-      isActive
-      status
-      plan
-      createdAt
-      updatedAt
+    getTenantBySlug(slug: $slug) {
+      ...TenantFields
     }
   }
 `

@@ -1,17 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Edit, Trash2, MoreHorizontal } from 'lucide-react'
+import Link from 'next/link'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Edit, Trash2, MoreHorizontal } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import Link from 'next/link'
+import { DataTable, createCreatedAtColumn } from '@/components/data-table'
 
 interface NewsCategory {
   id: string
@@ -32,7 +26,6 @@ interface NewsCategory {
   createdAt: string
 }
 
-// Mock data - replace with actual API call
 const mockCategories: NewsCategory[] = [
   {
     id: '1',
@@ -72,92 +65,92 @@ const mockCategories: NewsCategory[] = [
   },
 ]
 
-export function NewsCategoriesTable() {
-  const [categories] = useState<NewsCategory[]>(mockCategories)
-
-  const handleDelete = (id: string) => {
+function ActionsCell({ category }: { category: NewsCategory }) {
+  const handleDelete = () => {
     // TODO: Implement delete functionality
-    console.log('Delete category:', id)
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Category</TableHead>
-            <TableHead>Slug</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Articles</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="w-[70px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {categories.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
-                No categories found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            categories.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    style={{
-                      borderColor: category.color,
-                      color: category.color,
-                    }}
-                  >
-                    {category.name}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-mono text-sm text-muted-foreground">
-                  {category.slug}
-                </TableCell>
-                <TableCell className="max-w-[300px] truncate">
-                  {category.description || '-'}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{category.articleCount}</Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {new Date(category.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem asChild>
-                        <Link href={`/news/categories/${category.id}/edit`}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => handleDelete(category.id)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem asChild>
+          <Link href={`/news/categories/${category.id}/edit`}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+const columns: ColumnDef<NewsCategory>[] = [
+  {
+    accessorKey: 'name',
+    header: 'Category',
+    cell: ({ row }) => {
+      const category = row.original
+      return (
+        <Badge
+          variant="outline"
+          style={{ borderColor: category.color, color: category.color }}
+        >
+          {category.name}
+        </Badge>
+      )
+    },
+  },
+  {
+    accessorKey: 'slug',
+    header: 'Slug',
+    cell: ({ getValue }) => (
+      <span className="font-mono text-sm text-muted-foreground">{getValue<string>()}</span>
+    ),
+  },
+  {
+    accessorKey: 'description',
+    header: 'Description',
+    cell: ({ getValue }) => (
+      <span className="max-w-[300px] truncate block">{getValue<string | undefined>() || '-'}</span>
+    ),
+  },
+  {
+    accessorKey: 'articleCount',
+    header: 'Articles',
+    cell: ({ getValue }) => <Badge variant="secondary">{getValue<number>()}</Badge>,
+  },
+  createCreatedAtColumn<NewsCategory>(),
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: ({ row }) => <ActionsCell category={row.original} />,
+  },
+]
+
+interface NewsCategoriesTableProps {
+  categories?: NewsCategory[]
+}
+
+export function NewsCategoriesTable({ categories = mockCategories }: NewsCategoriesTableProps) {
+  return (
+    <DataTable
+      data={categories}
+      columns={columns}
+      showIndexColumn={false}
+      emptyMessage="No categories found."
+      toolbarConfig={{ searchPlaceholder: 'Search categories...' }}
+    />
   )
 }

@@ -21,7 +21,7 @@ export function FormatCheckList() {
   }
 
   const formatCheckList = () => {
-    if (blockType !== "number") {
+    if (blockType !== "check") {
       activeEditor.dispatchCommand(INSERT_CHECK_LIST_COMMAND, undefined)
     } else {
       formatParagraph()

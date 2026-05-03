@@ -1,116 +1,75 @@
 import { Suspense } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { UsersStats, UsersDataTable } from '@/features/users'
+import type { UsersPageSearchParams } from '@/features/users'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Shield, Users as UsersIcon, UserCheck, UserX } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import Link from 'next/link'
 
 interface UsersPageProps {
-  searchParams: {
-    page?: string
-    pageSize?: string
-    status?: string[]
-    role?: string[]
-    username?: string
-  }
+  searchParams: Promise<UsersPageSearchParams>
 }
 
-function UsersStats() {
-  // TODO: Replace with real data from GraphQL
-  const stats = [
-    {
-      title: 'Total Users',
-      value: 0,
-      description: 'All registered users',
-      icon: UsersIcon,
-      color: 'text-blue-600',
-    },
-    {
-      title: 'Active Users',
-      value: 0,
-      description: 'Currently active',
-      icon: UserCheck,
-      color: 'text-green-600',
-    },
-    {
-      title: 'Inactive Users',
-      value: 0,
-      description: 'Inactive accounts',
-      icon: UserX,
-      color: 'text-red-600',
-    },
-    {
-      title: 'Administrators',
-      value: 0,
-      description: 'Admin access',
-      icon: Shield,
-      color: 'text-purple-600',
-    },
-  ]
-
+function StatsSkeleton() {
   return (
-    <div className='mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
-      {stats.map((stat) => {
-        const Icon = stat.icon
-        return (
-          <Card key={stat.title}>
-            <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-              <CardTitle className='text-sm font-medium'>
-                {stat.title}
-              </CardTitle>
-              <Icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className='text-2xl font-bold'>{stat.value}</div>
-              <p className='text-muted-foreground text-xs'>
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        )
-      })}
+    <div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i}>
+          <CardContent className='p-6'>
+            <Skeleton className='h-4 w-20 mb-2' />
+            <Skeleton className='h-8 w-12' />
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
 
-export default function UsersPage({ searchParams }: UsersPageProps) {
+function TableSkeleton() {
   return (
-    <div className="space-y-6 p-6">
-      <div className='mb-6 flex flex-wrap items-center justify-between space-y-2 gap-x-4'>
+    <div className='rounded-md border'>
+      <div className='p-4 border-b'>
+        <Skeleton className='h-8 w-64' />
+      </div>
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className='flex items-center gap-4 px-4 py-3 border-b last:border-0'>
+          <Skeleton className='h-5 w-2/5' />
+          <Skeleton className='h-5 w-16' />
+          <Skeleton className='h-5 w-20' />
+          <Skeleton className='h-5 w-24' />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export default async function UsersPage({ searchParams }: UsersPageProps) {
+  const params = await searchParams
+  return (
+    <div className='space-y-6 p-6'>
+      <div className='flex items-center justify-between'>
         <div>
-          <h2 className='text-2xl font-bold tracking-tight'>
-            User Management
-          </h2>
-          <p className='text-muted-foreground'>
-            Manage user accounts, roles, and permissions across your organization.
+          <h1 className='text-3xl font-bold tracking-tight'>Users</h1>
+          <p className='text-sm text-muted-foreground mt-1'>
+            Manage user accounts, roles, and permissions
           </p>
         </div>
-        <div className='flex gap-2'>
-          <Button asChild>
-            <Link href='/users/invite'>
-              <Plus className='mr-2 h-4 w-4' />
-              Invite User
-            </Link>
-          </Button>
-        </div>
+        <Button asChild size='sm'>
+          <Link href='/users/invite'>
+            <Plus className='mr-1.5 h-4 w-4' />
+            Invite User
+          </Link>
+        </Button>
       </div>
 
-      <Suspense fallback={<div>Loading stats...</div>}>
+      <Suspense fallback={<StatsSkeleton />}>
         <UsersStats />
       </Suspense>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>
-            Manage user accounts and permissions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Server-side users datatable will be implemented here</p>
-          </div>
-        </CardContent>
-      </Card>
+      <Suspense fallback={<TableSkeleton />}>
+        <UsersDataTable searchParams={Promise.resolve(params)} />
+      </Suspense>
     </div>
   )
 }

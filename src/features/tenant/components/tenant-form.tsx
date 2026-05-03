@@ -14,15 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Loader2, Save } from "lucide-react";
 import { CREATE_TENANT, UPDATE_TENANT } from "@/graphql/mutations/tenant";
+import { FormSection } from "@/components/admin";
 import { toast } from "sonner";
 import type { Tenant, TenantStatus, TenantPlan } from "../types";
 
@@ -51,7 +45,6 @@ export function TenantForm({
     plan: "FREE" as TenantPlan,
   });
 
-  // Initialize form with existing tenant data
   useEffect(() => {
     if (initialData && mode === "edit") {
       setFormData({
@@ -65,7 +58,6 @@ export function TenantForm({
     }
   }, [initialData, mode]);
 
-  // Auto-generate slug from name
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
     setFormData((prev) => ({
@@ -111,12 +103,8 @@ export function TenantForm({
 
       router.push("/tenants");
     } catch (error: unknown) {
-      console.error("Failed to save tenant:", error);
       if (error instanceof Error) {
-        toast.error(
-          error.message ||
-            `Failed to ${mode === "edit" ? "update" : "create"} tenant`
-        );
+        toast.error(error.message || `Failed to ${mode === "edit" ? "update" : "create"} tenant`);
       } else {
         toast.error("An unknown error occurred");
       }
@@ -124,76 +112,66 @@ export function TenantForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Basic Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Basic Information</CardTitle>
-          <CardDescription>
-            Organization details and identifiers
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Organization Name *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={handleNameChange}
-              placeholder="Enter organization name"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <FormSection
+        title="Basic Information"
+        description="Organization details and identifiers"
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="name">Organization Name <span className="text-destructive">*</span></Label>
+          <Input
+            id="name"
+            value={formData.name}
+            onChange={handleNameChange}
+            placeholder="Enter organization name"
+            required
+            disabled={isSubmitting}
+          />
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">Slug *</Label>
-            <Input
-              id="slug"
-              value={formData.slug}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, slug: e.target.value }))
-              }
-              placeholder="organization-slug"
-              required
-              disabled={isSubmitting}
-              pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
-              title="Slug must be lowercase letters, numbers, and hyphens only"
-            />
-            <p className="text-xs text-muted-foreground">
-              URL-friendly identifier (lowercase, hyphens only)
-            </p>
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="slug">Slug <span className="text-destructive">*</span></Label>
+          <Input
+            id="slug"
+            value={formData.slug}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, slug: e.target.value }))
+            }
+            placeholder="organization-slug"
+            required
+            disabled={isSubmitting}
+            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+            title="Slug must be lowercase letters, numbers, and hyphens only"
+          />
+          <p className="text-xs text-muted-foreground">
+            URL-friendly identifier (lowercase, hyphens only)
+          </p>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="domain">Custom Domain</Label>
-            <Input
-              id="domain"
-              type="url"
-              value={formData.domain}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, domain: e.target.value }))
-              }
-              placeholder="https://example.com"
-              disabled={isSubmitting}
-            />
-            <p className="text-xs text-muted-foreground">
-              Optional custom domain for this organization
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="space-y-1.5">
+          <Label htmlFor="domain">Custom Domain</Label>
+          <Input
+            id="domain"
+            type="url"
+            value={formData.domain}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, domain: e.target.value }))
+            }
+            placeholder="https://example.com"
+            disabled={isSubmitting}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional custom domain for this organization
+          </p>
+        </div>
+      </FormSection>
 
-      {/* Status & Plan */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Status & Plan</CardTitle>
-          <CardDescription>
-            Organization status and subscription plan
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
+      <FormSection
+        title="Status & Plan"
+        description="Organization status and subscription plan"
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
             <Label htmlFor="status">Status</Label>
             <Select
               value={formData.status}
@@ -215,7 +193,7 @@ export function TenantForm({
             </Select>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="plan">Plan</Label>
             <Select
               value={formData.plan}
@@ -235,41 +213,40 @@ export function TenantForm({
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="isActive">Active</Label>
-              <p className="text-sm text-muted-foreground">
-                Enable or disable this organization
-              </p>
-            </div>
-            <Switch
-              id="isActive"
-              checked={formData.isActive}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, isActive: checked }))
-              }
-              disabled={isSubmitting}
-            />
+        <div className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium">Active</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Enable or disable this organization</p>
           </div>
-        </CardContent>
-      </Card>
+          <Switch
+            id="isActive"
+            checked={formData.isActive}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({ ...prev, isActive: checked }))
+            }
+            disabled={isSubmitting}
+          />
+        </div>
+      </FormSection>
 
-      {/* Form Actions */}
-      <div className="flex items-center justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <Save className="mr-2 h-4 w-4" />
-          {mode === "create" ? "Create Tenant" : "Update Tenant"}
-        </Button>
+      <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center gap-3 py-4">
+          <Button type="submit" disabled={isSubmitting} className="min-w-[160px]">
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Save className="mr-2 h-4 w-4" />
+            {mode === "create" ? "Create Tenant" : "Update Tenant"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     </form>
   );

@@ -1,18 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Edit, Trash2, MoreHorizontal, Building2 } from 'lucide-react'
+import Link from 'next/link'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Edit, Trash2, MoreHorizontal, Building2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,10 +14,98 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import Link from 'next/link'
+import { DataTable, createCreatedAtColumn } from '@/components/data-table'
 import type { Tenant } from '../types'
 import { tenantStatusConfig, tenantPlanConfig } from '../types'
-import { formatDistanceToNow } from 'date-fns'
+
+function ActionsCell({
+  tenant,
+  onDelete,
+}: {
+  tenant: Tenant
+  onDelete?: (id: string) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Open menu</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem asChild>
+          <Link href={`/tenants/${tenant.id}/edit`}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => onDelete?.(tenant.id)}
+          className="text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function buildColumns(onDelete?: (id: string) => void): ColumnDef<Tenant>[] {
+  return [
+    {
+      accessorKey: 'name',
+      header: 'Organization',
+      cell: ({ row }) => {
+        const tenant = row.original
+        const subline = tenant.domain
+          ? `${tenant.slug} · ${tenant.domain}`
+          : tenant.slug
+        return (
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted border flex-shrink-0">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold truncate">{tenant.name}</div>
+              <div className="text-xs text-muted-foreground font-mono truncate">{subline}</div>
+            </div>
+          </div>
+        )
+      },
+    },
+    {
+      id: 'meta',
+      header: 'Plan & Status',
+      cell: ({ row }) => {
+        const tenant = row.original
+        const planConf = tenantPlanConfig[tenant.plan]
+        const statusConf = tenantStatusConfig[tenant.status]
+        return (
+          <div>
+            <Badge variant="outline" className={planConf?.color || ''}>
+              {planConf?.label || tenant.plan}
+            </Badge>
+            <div className="mt-1">
+              <Badge variant="outline" className={statusConf?.color || ''}>
+                {statusConf?.label || tenant.status}
+              </Badge>
+            </div>
+          </div>
+        )
+      },
+    },
+    createCreatedAtColumn<Tenant>(),
+    {
+      id: 'actions',
+      enableHiding: false,
+      cell: ({ row }) => <ActionsCell tenant={row.original} onDelete={onDelete} />,
+    },
+  ]
+}
 
 interface TenantsTableProps {
   tenants: Tenant[]
@@ -32,152 +113,16 @@ interface TenantsTableProps {
 }
 
 export function TenantsTable({ tenants, onDelete }: TenantsTableProps) {
-  const [selectedTenants, setSelectedTenants] = useState<string[]>([])
-
-  const handleDelete = (id: string) => {
-    if (onDelete) {
-      onDelete(id)
-    } else {
-      console.log('Delete tenant:', id)
-    }
-  }
-
-  const toggleTenant = (tenantId: string) => {
-    setSelectedTenants(prev =>
-      prev.includes(tenantId)
-        ? prev.filter(id => id !== tenantId)
-        : [...prev, tenantId]
-    )
-  }
-
-  const toggleAll = () => {
-    setSelectedTenants(prev =>
-      prev.length === tenants.length ? [] : tenants.map(t => t.id)
-    )
-  }
+  const columns = buildColumns(onDelete)
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[50px]">
-              <Checkbox
-                checked={selectedTenants.length === tenants.length && tenants.length > 0}
-                onCheckedChange={toggleAll}
-                aria-label="Select all tenants"
-              />
-            </TableHead>
-            <TableHead>Organization</TableHead>
-            <TableHead>Domain</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Plan</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="w-[70px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tenants.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
-                No tenants found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            tenants.map((tenant) => {
-              const statusConf = tenantStatusConfig[tenant.status]
-              const planConf = tenantPlanConfig[tenant.plan]
-
-              return (
-                <TableRow key={tenant.id}>
-                  {/* Checkbox */}
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedTenants.includes(tenant.id)}
-                      onCheckedChange={() => toggleTenant(tenant.id)}
-                      aria-label={`Select ${tenant.name}`}
-                    />
-                  </TableCell>
-
-                  {/* Tenant Info */}
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-md bg-muted border">
-                        <Building2 className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium truncate">{tenant.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Slug: {tenant.slug}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  {/* Domain */}
-                  <TableCell>
-                    {tenant.domain ? (
-                      <div className="text-sm">{tenant.domain}</div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-
-                  {/* Status */}
-                  <TableCell>
-                    <Badge variant="outline" className={statusConf?.color || ''}>
-                      {statusConf?.label || tenant.status}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Plan */}
-                  <TableCell>
-                    <Badge variant="outline" className={planConf?.color || ''}>
-                      {planConf?.label || tenant.plan}
-                    </Badge>
-                  </TableCell>
-
-                  {/* Created */}
-                  <TableCell>
-                    <div className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(tenant.createdAt), { addSuffix: true })}
-                    </div>
-                  </TableCell>
-
-                  {/* Actions */}
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/tenants/${tenant.id}/edit`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(tenant.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              )
-            })
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <DataTable
+      data={tenants}
+      columns={columns}
+      showIndexColumn={false}
+      enableRowSelection
+      emptyMessage="No tenants found."
+      toolbarConfig={{ searchPlaceholder: 'Search tenants...' }}
+    />
   )
 }

@@ -1,17 +1,19 @@
 import { gql } from '@apollo/client'
+import { PAGINATION_FIELDS } from '../fragments/pagination'
 
 export const GET_NOMINATIONS = gql`
+  ${PAGINATION_FIELDS}
   query GetNominations(
     $status: NominationStatus
     $country: String
     $limit: Int
-    $offset: Int
+    $page: Int
   ) {
-    nominations(
+    getNominations(
       status: $status
       country: $country
       limit: $limit
-      offset: $offset
+      page: $page
     ) {
       nominations {
         id
@@ -38,12 +40,7 @@ export const GET_NOMINATIONS = gql`
         updatedAt
       }
       pagination {
-        total
-        totalPages
-        currentPage
-        perPage
-        hasNextPage
-        hasPreviousPage
+        ...PaginationFields
       }
     }
   }
@@ -51,7 +48,7 @@ export const GET_NOMINATIONS = gql`
 
 export const GET_NOMINATION = gql`
   query GetNomination($id: ID!) {
-    nominationById(id: $id) {
+    getNomination(id: $id) {
       id
       country
       parkNames
@@ -82,7 +79,7 @@ export const GET_NOMINATION = gql`
 
 export const GET_NOMINATION_STATS = gql`
   query GetNominationStats {
-    nominationStats {
+    getNominationStats {
       total
       pending
       underReview

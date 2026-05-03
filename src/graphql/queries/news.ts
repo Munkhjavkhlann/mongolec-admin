@@ -9,7 +9,7 @@ export const GET_NEWS_ARTICLES = gql`
     $limit: Int
     $offset: Int
   ) {
-    newsArticles(
+    getNewsArticles(
       language: $language
       status: $status
       priority: $priority
@@ -37,11 +37,11 @@ export const GET_NEWS_ARTICLES = gql`
       keywords
       publishedAt
       scheduledAt
+      views
       category {
         id
         name
         slug
-        description
         color
         icon
       }
@@ -53,7 +53,7 @@ export const GET_NEWS_ARTICLES = gql`
 
 export const GET_NEWS_ARTICLE_BY_ID = gql`
   query GetNewsArticleById($id: ID!, $language: String) {
-    newsArticleById(id: $id, language: $language) {
+    getNewsArticleById(id: $id, language: $language) {
       id
       slug
       title
@@ -90,7 +90,7 @@ export const GET_NEWS_ARTICLE_BY_ID = gql`
 
 export const GET_NEWS_CATEGORIES = gql`
   query GetNewsCategories($language: String) {
-    newsCategories(language: $language) {
+    getNewsCategories(language: $language) {
       id
       name
       slug
@@ -104,7 +104,7 @@ export const GET_NEWS_CATEGORIES = gql`
 
 export const GET_NEWS_CATEGORY_BY_ID = gql`
   query GetNewsCategoryById($id: ID!, $language: String) {
-    newsCategoryById(id: $id, language: $language) {
+    getNewsCategoryById(id: $id, language: $language) {
       id
       name
       slug

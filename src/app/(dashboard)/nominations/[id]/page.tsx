@@ -1,42 +1,21 @@
 'use client'
 
 import { useQuery } from '@apollo/client/react'
-import { useParams, useRouter } from 'next/navigation'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { useParams } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
-  Loader2,
-  ArrowLeft,
-  MapPin,
-  Globe,
-  Mail,
-  Phone,
-  Building,
-  FileText,
-  Calendar,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Trophy,
+  MapPin, Globe, Mail, Building, FileText, Calendar, Clock, Trophy,
 } from 'lucide-react'
 import { GET_NOMINATION } from '@/graphql/queries/nominations'
 import { AlertCircle } from 'lucide-react'
-import Link from 'next/link'
 import {
   ApproveButton,
   RejectButton,
   SelectButton,
 } from '@/features/nominations/components/nomination-actions'
 import { nominationStatusConfig } from '@/features/nominations/types'
+import { PageHeader, FormSection, DetailField, EmptyState } from '@/components/admin'
 
 interface NominationDetail {
   id: string
@@ -68,12 +47,31 @@ interface NominationDetail {
 }
 
 interface GetNominationQuery {
-  nominationById: NominationDetail
+  getNomination: NominationDetail
+}
+
+const formatDate = (dateString?: string) => {
+  if (!dateString) return undefined
+  return new Date(dateString).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  })
+}
+
+const str = (value: unknown): string | undefined => {
+  if (value == null) return undefined
+  if (typeof value === 'string') return value
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    if (typeof obj.description === 'string') return obj.description
+    if (typeof obj.en === 'string') return obj.en
+    if (typeof obj.mn === 'string') return obj.mn
+    return JSON.stringify(obj)
+  }
+  return String(value)
 }
 
 export default function NominationDetailPage() {
   const params = useParams()
-  const router = useRouter()
   const nominationId = params.id as string
 
   const { data, loading, error, refetch } = useQuery<GetNominationQuery>(GET_NOMINATION, {
@@ -81,360 +79,183 @@ export default function NominationDetailPage() {
     fetchPolicy: 'cache-and-network',
   })
 
-  const nomination = data?.nominationById
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A'
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    })
-  }
+  const nomination = data?.getNomination
 
   if (loading) {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <span className="ml-2 text-muted-foreground">Loading nomination...</span>
-        </div>
+      <div className="p-6">
+        <EmptyState icon={MapPin} title="Loading nomination…" className="py-20" />
       </div>
     )
   }
 
   if (error || !nomination) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 p-6">
+        <PageHeader title="Nomination" backHref="/nominations" />
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {error?.message || 'Nomination not found'}
-          </AlertDescription>
+          <AlertDescription>{error?.message || 'Nomination not found'}</AlertDescription>
         </Alert>
-        <Button variant="outline" asChild>
-          <Link href="/nominations">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Nominations
-          </Link>
-        </Button>
       </div>
     )
   }
 
-  const statusKey = nomination.status as keyof typeof nominationStatusConfig
-  const statusConf = nominationStatusConfig[statusKey]
+  const statusConf = nominationStatusConfig[nomination.status as keyof typeof nominationStatusConfig]
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/nominations">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {nomination.parkNames[0]}
-            </h1>
-            <p className="text-muted-foreground">{nomination.country}</p>
-          </div>
+    <div className="space-y-5 p-6">
+      <PageHeader
+        title={nomination.parkNames[0]}
+        description={nomination.country}
+        backHref="/nominations"
+        badge={
+          <Badge variant={statusConf.variant} className={statusConf.color}>
+            {statusConf.label}
+          </Badge>
+        }
+      />
+
+      {/* Actions */}
+      <FormSection title="Actions" description="Review and update nomination status">
+        <div className="flex flex-wrap gap-2">
+          {(nomination.status === 'PENDING' || nomination.status === 'UNDER_REVIEW') && (
+            <>
+              <ApproveButton nominationId={nomination.id} status={nomination.status} onActionComplete={() => refetch()} />
+              <RejectButton nominationId={nomination.id} status={nomination.status} onActionComplete={() => refetch()} />
+            </>
+          )}
+          {nomination.status === 'APPROVED' && (
+            <SelectButton nominationId={nomination.id} status={nomination.status} onActionComplete={() => refetch()} />
+          )}
         </div>
-        <Badge variant={statusConf.variant} className={statusConf.color}>
-          {statusConf.label}
-        </Badge>
-      </div>
+      </FormSection>
 
-      {/* Action Buttons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Actions</CardTitle>
-          <CardDescription>Review and update nomination status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {(nomination.status === 'PENDING' || nomination.status === 'UNDER_REVIEW') && (
-              <>
-                <ApproveButton
-                  nominationId={nomination.id}
-                  status={nomination.status}
-                  onActionComplete={() => refetch()}
-                />
-                <RejectButton
-                  nominationId={nomination.id}
-                  status={nomination.status}
-                  onActionComplete={() => refetch()}
-                />
-              </>
-            )}
-            {nomination.status === 'APPROVED' && (
-              <SelectButton
-                nominationId={nomination.id}
-                status={nomination.status}
-                onActionComplete={() => refetch()}
-              />
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Information */}
-        <div className="space-y-6 lg:col-span-2">
+      <div className="grid gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
           {/* Park Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Park Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Park Name</div>
-                <div className="text-lg font-medium">{nomination.parkNames[0]}</div>
-              </div>
+          <FormSection title="Park Information">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailField label="Park Name" value={nomination.parkNames[0]} icon={MapPin} />
+              <DetailField label="Country" value={nomination.country} />
               {nomination.parkWebsites?.[0] && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Website</div>
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={nomination.parkWebsites[0]}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
+                <DetailField
+                  label="Website"
+                  value={
+                    <a href={nomination.parkWebsites[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5" />
                       {nomination.parkWebsites[0]}
                     </a>
-                  </div>
-                </div>
+                  }
+                />
               )}
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">Country</div>
-                <div className="text-lg">{nomination.country}</div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </FormSection>
 
           {/* Park Contact */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Park Contact</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {(nomination.parkContactFirstName || nomination.parkContactLastName) && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Contact Name</div>
-                  <div className="text-lg">{`${nomination.parkContactFirstName} ${nomination.parkContactLastName}`.trim()}</div>
-                </div>
-              )}
-              {nomination.parkContactEmail && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Email</div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={`mailto:${nomination.parkContactEmail}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {nomination.parkContactEmail}
-                    </a>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <FormSection title="Park Contact">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailField
+                label="Contact Name"
+                value={`${nomination.parkContactFirstName} ${nomination.parkContactLastName}`.trim() || undefined}
+              />
+              <DetailField
+                label="Email"
+                value={nomination.parkContactEmail ? (
+                  <a href={`mailto:${nomination.parkContactEmail}`} className="text-blue-600 hover:underline">
+                    {nomination.parkContactEmail}
+                  </a>
+                ) : undefined}
+                icon={Mail}
+              />
+            </div>
+          </FormSection>
 
           {/* Partner Organization */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5" />
-                Partner Organization
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {nomination.partnerOrganizationName && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Organization</div>
-                  <div className="text-lg font-medium">{nomination.partnerOrganizationName}</div>
-                </div>
+          {(str(nomination.partnerOrganizationName) || nomination.partnerContactEmail || nomination.partnerWebsite) && (
+            <FormSection title="Partner Organization">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {str(nomination.partnerOrganizationName) && (
+                  <DetailField label="Organization" value={str(nomination.partnerOrganizationName)} icon={Building} />
+                )}
+                {(nomination.partnerContactFirstName || nomination.partnerContactLastName) && (
+                  <DetailField
+                    label="Contact Person"
+                    value={`${nomination.partnerContactFirstName ?? ''} ${nomination.partnerContactLastName ?? ''}`.trim()}
+                  />
+                )}
+                {nomination.partnerContactEmail && (
+                  <DetailField
+                    label="Email"
+                    value={
+                      <a href={`mailto:${nomination.partnerContactEmail}`} className="text-blue-600 hover:underline">
+                        {nomination.partnerContactEmail}
+                      </a>
+                    }
+                    icon={Mail}
+                  />
+                )}
+                {nomination.partnerWebsite && (
+                  <DetailField
+                    label="Website"
+                    value={
+                      <a href={nomination.partnerWebsite} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1.5">
+                        <Globe className="h-3.5 w-3.5" />
+                        {nomination.partnerWebsite}
+                      </a>
+                    }
+                  />
+                )}
+              </div>
+              {str(nomination.partnerAddress) && (
+                <DetailField label="Address" value={<span className="whitespace-pre-wrap">{str(nomination.partnerAddress)}</span>} className="mt-2" />
               )}
-              {(nomination.partnerContactFirstName || nomination.partnerContactLastName) && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Contact Person</div>
-                  <div>{`${nomination.partnerContactFirstName ?? ''} ${nomination.partnerContactLastName ?? ''}`.trim()}</div>
-                </div>
-              )}
-              {nomination.partnerContactEmail && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Email</div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={`mailto:${nomination.partnerContactEmail}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {nomination.partnerContactEmail}
-                    </a>
-                  </div>
-                </div>
-              )}
-              {nomination.partnerWebsite && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Website</div>
-                  <div className="flex items-center gap-2">
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                    <a
-                      href={nomination.partnerWebsite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {nomination.partnerWebsite}
-                    </a>
-                  </div>
-                </div>
-              )}
-              {nomination.partnerAddress && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Address</div>
-                  <div className="whitespace-pre-wrap">{nomination.partnerAddress}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </FormSection>
+          )}
 
           {/* Mission & Support */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Mission & Support
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {nomination.primaryMission && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">Primary Mission</div>
-                  <div className="mt-1 whitespace-pre-wrap">{nomination.primaryMission}</div>
-                </div>
+          {(str(nomination.primaryMission) || str(nomination.motorcycleSupport) || str(nomination.partnerLogisticsSupport) || str(nomination.otherInfo)) && (
+            <FormSection title="Mission & Support">
+              {str(nomination.primaryMission) && (
+                <DetailField label="Primary Mission" value={<span className="whitespace-pre-wrap">{str(nomination.primaryMission)}</span>} icon={FileText} />
               )}
-              {nomination.motorcycleSupport && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Motorcycle Support
-                  </div>
-                  <div className="mt-1 whitespace-pre-wrap">{nomination.motorcycleSupport}</div>
-                </div>
+              {str(nomination.motorcycleSupport) && (
+                <DetailField label="Motorcycle Support" value={<span className="whitespace-pre-wrap">{str(nomination.motorcycleSupport)}</span>} className="mt-3" />
               )}
-              {nomination.partnerLogisticsSupport && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Logistics Support
-                  </div>
-                  <div className="mt-1 whitespace-pre-wrap">{nomination.partnerLogisticsSupport}</div>
-                </div>
+              {str(nomination.partnerLogisticsSupport) && (
+                <DetailField label="Logistics Support" value={<span className="whitespace-pre-wrap">{str(nomination.partnerLogisticsSupport)}</span>} className="mt-3" />
               )}
-              {nomination.otherInfo && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Additional Information
-                  </div>
-                  <div className="mt-1 whitespace-pre-wrap">{nomination.otherInfo}</div>
-                </div>
+              {str(nomination.otherInfo) && (
+                <DetailField label="Additional Information" value={<span className="whitespace-pre-wrap">{str(nomination.otherInfo)}</span>} className="mt-3" />
               )}
-            </CardContent>
-          </Card>
+            </FormSection>
+          )}
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Status Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Nomination Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
-                {nomination.status === 'APPROVED' || nomination.status === 'SELECTED' ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : nomination.status === 'REJECTED' || nomination.status === 'NOT_SELECTED' ? (
-                  <XCircle className="h-5 w-5 text-red-500" />
-                ) : (
-                  <Clock className="h-5 w-5 text-yellow-500" />
-                )}
-                <span className="font-medium">{statusConf.label}</span>
-              </div>
-              {nomination.selectedForRallyId && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Trophy className="h-4 w-4 text-purple-500" />
-                  <span>Selected for Rally ID: {nomination.selectedForRallyId}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Nomination Metadata */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Nomination Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  Nominated On
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>{formatDate(nomination.createdAt)}</span>
-                </div>
-              </div>
+        <div className="space-y-5">
+          <FormSection title="Nomination Details">
+            <div className="space-y-3">
+              <DetailField label="Nominated On" value={formatDate(nomination.createdAt)} icon={Calendar} />
               {nomination.reviewedAt && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Reviewed On
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{formatDate(nomination.reviewedAt)}</span>
-                  </div>
-                </div>
+                <DetailField label="Reviewed On" value={formatDate(nomination.reviewedAt)} icon={Clock} />
               )}
               {nomination.reviewedBy && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Reviewed By
-                  </div>
-                  <div>{nomination.reviewedBy}</div>
-                </div>
+                <DetailField label="Reviewed By" value={nomination.reviewedBy} />
               )}
               {nomination.submittedBy && (
-                <div>
-                  <div className="text-sm font-medium text-muted-foreground">
-                    Submitted By
-                  </div>
-                  <div>{nomination.submittedBy}</div>
-                </div>
+                <DetailField label="Submitted By" value={nomination.submittedBy} />
               )}
-            </CardContent>
-          </Card>
+              {nomination.selectedForRallyId && (
+                <DetailField label="Selected for Rally" value={nomination.selectedForRallyId} icon={Trophy} />
+              )}
+            </div>
+          </FormSection>
 
-          {/* Review Notes */}
           {nomination.reviewNotes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Review Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="whitespace-pre-wrap text-sm">
-                  {nomination.reviewNotes}
-                </div>
-              </CardContent>
-            </Card>
+            <FormSection title="Review Notes">
+              <p className="text-sm whitespace-pre-wrap text-foreground/80">{nomination.reviewNotes}</p>
+            </FormSection>
           )}
         </div>
       </div>

@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 
 interface GetTenantByIdData {
-  tenantById: any;
+  getTenantById: any;
 }
 
 export default function EditTenantPage({ params }: { params: { id: string } }) {
@@ -40,7 +40,7 @@ export default function EditTenantPage({ params }: { params: { id: string } }) {
     )
   }
 
-  if (!data?.tenantById) {
+  if (!data?.getTenantById) {
     return (
       <div className="container mx-auto py-6 max-w-3xl">
         <Alert variant="destructive">
@@ -66,7 +66,7 @@ export default function EditTenantPage({ params }: { params: { id: string } }) {
         <TenantForm
           mode="edit"
           tenantId={params.id}
-          initialData={data.tenantById}
+          initialData={data.getTenantById}
         />
       </div>
     </div>

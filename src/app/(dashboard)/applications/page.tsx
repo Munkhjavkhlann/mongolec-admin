@@ -2,16 +2,10 @@
 
 import { useState } from 'react'
 import { useQuery } from '@apollo/client/react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { FileText, Loader2, Search } from 'lucide-react'
+import { FileText, Search } from 'lucide-react'
 import { ApplicationsTable } from '@/features/applications/components/applications-table'
 import { GET_APPLICATIONS, GET_APPLICATION_STATS } from '@/graphql/queries/applications'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -24,226 +18,130 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { GET_RALLIES } from '@/graphql/queries/rallies'
+import { PageHeader, StatBar, EmptyState } from '@/components/admin'
 
 interface GetApplicationsData {
-  applications: {
+  getApplications: {
     applications: any[]
     pagination: any
   }
 }
 
 interface GetApplicationStatsData {
-  applicationStats: {
-    total: number
-    pending: number
-    underReview: number
-    approved: number
-    waitlisted: number
-    rejected: number
-    cancelled: number
-    confirmed: number
+  getApplicationStats: {
+    totalApplications: number
+    pendingApplications: number
+    approvedApplications: number
+    rejectedApplications: number
+    waitlistedApplications: number
+    confirmedApplications: number
+    riderCount: number
+    supporterCount: number
+    totalRaising: number
   }
 }
 
 interface GetRalliesData {
-  rallies: {
+  getRallies: {
     rallies: any[]
     pagination: any
   }
 }
 
+const STATUS_TABS = [
+  { value: 'all', label: 'All', filter: undefined },
+  { value: 'pending', label: 'Pending', filter: 'PENDING' },
+  { value: 'under_review', label: 'Under Review', filter: 'UNDER_REVIEW' },
+  { value: 'approved', label: 'Approved', filter: 'APPROVED' },
+  { value: 'confirmed', label: 'Confirmed', filter: 'CONFIRMED' },
+  { value: 'waitlisted', label: 'Waitlisted', filter: 'WAITLIST' },
+  { value: 'rejected', label: 'Rejected', filter: 'REJECTED' },
+]
+
+const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
+  if (!field) return ''
+  if (typeof field === 'string') return field
+  return field.en || field.mn || ''
+}
+
 export default function ApplicationsPage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState('all')
   const [rallyFilter, setRallyFilter] = useState<string | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
 
+  const activeFilter = STATUS_TABS.find(t => t.value === activeTab)?.filter
+
   const { data: statsData, loading: statsLoading } = useQuery<GetApplicationStatsData>(
     GET_APPLICATION_STATS,
-    {
-      fetchPolicy: 'cache-and-network',
-    }
+    { fetchPolicy: 'cache-and-network' }
   )
 
   const { data: ralliesData } = useQuery<GetRalliesData>(GET_RALLIES, {
-    variables: {
-      language: 'en',
-      limit: 100,
-      offset: 0,
-    },
+    variables: { limit: 100, page: 1 },
   })
 
   const { data, loading, error, refetch } = useQuery<GetApplicationsData>(GET_APPLICATIONS, {
-    variables: {
-      status: statusFilter,
-      rallyId: rallyFilter,
-      limit: 100,
-      offset: 0,
-    },
+    variables: { status: activeFilter, rallyId: rallyFilter, limit: 100, page: 1 },
     fetchPolicy: 'cache-and-network',
   })
 
-  const applications = data?.applications?.applications || []
-  const stats = statsData?.applicationStats || {
-    total: 0,
-    pending: 0,
-    underReview: 0,
-    approved: 0,
-    waitlisted: 0,
-    rejected: 0,
-    cancelled: 0,
-    confirmed: 0,
-  }
+  const applications = data?.getApplications?.applications ?? []
+  const s = statsData?.getApplicationStats
+  const rallies = ralliesData?.getRallies?.rallies ?? []
 
-  const rallies = ralliesData?.rallies?.rallies || []
-
-  // Helper to extract string from multilingual field
-  const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
-    if (!field) return ''
-    if (typeof field === 'string') return field
-    return field.en || field.mn || ''
-  }
-
-  // Filter applications by search query
   const filteredApplications = applications.filter((app: any) => {
     if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    const fullName = `${app.firstName} ${app.lastName}`.toLowerCase()
-    const email = app.email.toLowerCase()
-    const rallyTitle = getDisplayName(app.rally?.title).toLowerCase()
-
+    const q = searchQuery.toLowerCase()
     return (
-      fullName.includes(query) ||
-      email.includes(query) ||
-      rallyTitle.includes(query)
+      `${app.firstName} ${app.lastName}`.toLowerCase().includes(q) ||
+      app.email.toLowerCase().includes(q) ||
+      getDisplayName(app.rally?.title).toLowerCase().includes(q)
     )
   })
 
+  const stats = [
+    { label: 'Total', value: statsLoading ? '—' : (s?.totalApplications ?? 0) },
+    { label: 'Pending', value: statsLoading ? '—' : (s?.pendingApplications ?? 0), accent: 'amber' as const },
+    { label: 'Approved', value: statsLoading ? '—' : (s?.approvedApplications ?? 0), accent: 'green' as const },
+    { label: 'Confirmed', value: statsLoading ? '—' : (s?.confirmedApplications ?? 0), accent: 'blue' as const },
+    { label: 'Waitlisted', value: statsLoading ? '—' : (s?.waitlistedApplications ?? 0) },
+    { label: 'Rejected', value: statsLoading ? '—' : (s?.rejectedApplications ?? 0), accent: 'red' as const },
+  ]
+
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Applications</h1>
-          <p className="text-muted-foreground">
-            Review and manage rally applications
-          </p>
-        </div>
-      </div>
+    <div className="space-y-5 p-6">
+      <PageHeader
+        title="Applications"
+        description="Review and manage rally applications"
+      />
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">All applications</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <StatBar stats={stats} loading={statsLoading} />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.pending + stats.underReview}</div>
-                <p className="text-xs text-muted-foreground">Awaiting review</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.approved}</div>
-                <p className="text-xs text-muted-foreground">{stats.confirmed} confirmed</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Waitlisted</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.waitlisted}</div>
-                <p className="text-xs text-muted-foreground">{stats.rejected} rejected</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Error State */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load applications: {error.message}
-          </AlertDescription>
+          <AlertDescription>Failed to load applications: {error.message}</AlertDescription>
         </Alert>
       )}
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="all" onClick={() => setStatusFilter(undefined)}>
-              All
-            </TabsTrigger>
-            <TabsTrigger value="pending" onClick={() => setStatusFilter('PENDING')}>
-              Pending
-            </TabsTrigger>
-            <TabsTrigger value="under_review" onClick={() => setStatusFilter('UNDER_REVIEW')}>
-              Under Review
-            </TabsTrigger>
-            <TabsTrigger value="approved" onClick={() => setStatusFilter('APPROVED')}>
-              Approved
-            </TabsTrigger>
-            <TabsTrigger value="confirmed" onClick={() => setStatusFilter('CONFIRMED')}>
-              Confirmed
-            </TabsTrigger>
-            <TabsTrigger value="waitlisted" onClick={() => setStatusFilter('WAITLIST')}>
-              Waitlisted
-            </TabsTrigger>
-            <TabsTrigger value="rejected" onClick={() => setStatusFilter('REJECTED')}>
-              Rejected
-            </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <TabsList className="h-9">
+            {STATUS_TABS.map(tab => (
+              <TabsTrigger key={tab.value} value={tab.value} className="text-xs px-4">
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <div className="flex gap-2">
-            {/* Rally Filter */}
-            <Select value={rallyFilter ?? ''} onValueChange={(v) => setRallyFilter(v || undefined)}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by rally" />
+          <div className="flex gap-2 shrink-0">
+            <Select value={rallyFilter ?? 'all'} onValueChange={(v) => setRallyFilter(v === 'all' ? undefined : v)}>
+              <SelectTrigger className="h-9 w-[180px] text-xs">
+                <SelectValue placeholder="All Rallies" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Rallies</SelectItem>
-                {rallies.map((rally) => (
+                <SelectItem value="all">All Rallies</SelectItem>
+                {rallies.map((rally: any) => (
                   <SelectItem key={rally.id} value={rally.id}>
                     {getDisplayName(rally.title)}
                   </SelectItem>
@@ -251,85 +149,37 @@ export default function ApplicationsPage() {
               </SelectContent>
             </Select>
 
-            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search applicant..."
+                placeholder="Search applicant…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 w-[250px]"
+                className="pl-8 h-9 w-[200px] text-xs"
               />
             </div>
           </div>
         </div>
 
-        <TabsContent value="all" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">Loading applications...</span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <ApplicationsTable
-              applications={filteredApplications}
-              loading={loading}
-              onActionComplete={() => refetch()}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="pending" className="space-y-4">
-          <ApplicationsTable
-            applications={filteredApplications}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="under_review" className="space-y-4">
-          <ApplicationsTable
-            applications={filteredApplications}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="approved" className="space-y-4">
-          <ApplicationsTable
-            applications={filteredApplications}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="confirmed" className="space-y-4">
-          <ApplicationsTable
-            applications={filteredApplications}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="waitlisted" className="space-y-4">
-          <ApplicationsTable
-            applications={filteredApplications}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="rejected" className="space-y-4">
-          <ApplicationsTable
-            applications={filteredApplications}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
+        {STATUS_TABS.map(tab => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-4">
+            {loading ? (
+              <div className="rounded-xl border border-border/60 bg-card">
+                <EmptyState icon={FileText} title="Loading applications…" className="py-12" />
+              </div>
+            ) : filteredApplications.length === 0 ? (
+              <div className="rounded-xl border border-border/60 bg-card">
+                <EmptyState icon={FileText} title="No applications found" description="Applications will appear here once submitted." />
+              </div>
+            ) : (
+              <ApplicationsTable
+                applications={filteredApplications}
+                loading={loading}
+                onActionComplete={() => refetch()}
+              />
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )

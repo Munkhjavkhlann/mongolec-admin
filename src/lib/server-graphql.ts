@@ -31,6 +31,7 @@ export async function serverGraphQL<T>(
     },
     body: JSON.stringify({ query, variables }),
     cache: 'no-store',
+    signal: AbortSignal.timeout(15000),
   })
 
   if (!response.ok) {

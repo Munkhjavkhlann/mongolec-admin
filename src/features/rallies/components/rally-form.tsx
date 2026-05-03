@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@apollo/client/react";
 import { Button } from "@/components/ui/button";
@@ -19,13 +19,7 @@ import {
   SingleImageUpload,
   SingleImageUploadRef,
 } from "@/components/single-image-upload";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FormSection } from "@/components/admin";
 import { Loader2, Save } from "lucide-react";
 import {
   CREATE_RALLY,
@@ -55,35 +49,15 @@ export function RallyForm({
 
   const heroImageRef = useRef<SingleImageUploadRef>(null);
 
-  const [formData, setFormData] = useState({
-    title: { en: "", mn: "" },
-    slug: "",
-    description: { en: "", mn: "" },
-    location: { en: "", mn: "" },
-    targetAudience: { en: "", mn: "" },
-    startDate: "",
-    endDate: "",
-    duration: 0,
-    maxParticipants: 0,
-    heroImage: "",
-    heroVideo: "",
-    isRecruiting: false,
-    applicationDeadline: "",
-    status: "DRAFT",
-  });
+  const normalizeLangField = (field: string | { en: string; mn: string } | undefined) => {
+    if (!field) return { en: "", mn: "" };
+    if (typeof field === "string") return { en: field, mn: field };
+    return field;
+  };
 
-  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
-
-  // Initialize form with existing rally data
-  useEffect(() => {
+  const [formData, setFormData] = useState(() => {
     if (initialData && mode !== "create") {
-      const normalizeLangField = (field: string | { en: string; mn: string } | undefined) => {
-        if (!field) return { en: "", mn: "" };
-        if (typeof field === "string") return { en: field, mn: field };
-        return field;
-      };
-
-      setFormData({
+      return {
         title: normalizeLangField(initialData.title),
         slug: initialData.slug || "",
         description: normalizeLangField(initialData.description),
@@ -98,9 +72,27 @@ export function RallyForm({
         isRecruiting: initialData.isRecruiting ?? false,
         applicationDeadline: initialData.applicationDeadline ? initialData.applicationDeadline.split('T')[0] : "",
         status: initialData.status || "DRAFT",
-      });
+      };
     }
-  }, [initialData, mode]);
+    return {
+      title: { en: "", mn: "" },
+      slug: "",
+      description: { en: "", mn: "" },
+      location: { en: "", mn: "" },
+      targetAudience: { en: "", mn: "" },
+      startDate: "",
+      endDate: "",
+      duration: 0,
+      maxParticipants: 0,
+      heroImage: "",
+      heroVideo: "",
+      isRecruiting: false,
+      applicationDeadline: "",
+      status: "DRAFT",
+    };
+  });
+
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
 
   // Auto-generate slug from title
   const generateSlug = (title: string) => {
@@ -135,22 +127,30 @@ export function RallyForm({
         }
       }
 
-      const input = {
+      const baseInput = {
         title: formData.title,
-        slug: formData.slug || generateSlug(formData.title.en || formData.title.mn || "rally"),
         description: formData.description,
         location: formData.location,
         targetAudience: formData.targetAudience,
         startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-        duration: formData.duration || null,
+        duration: formData.duration || 0,
         maxParticipants: formData.maxParticipants || null,
         heroImage: heroImageUrl,
         heroVideo: formData.heroVideo || null,
         isRecruiting: formData.isRecruiting,
         applicationDeadline: formData.applicationDeadline ? new Date(formData.applicationDeadline).toISOString() : null,
-        status: formData.status,
       };
+
+      const input = mode === "edit"
+        ? { ...baseInput, slug: formData.slug, status: formData.status }
+        : {
+            ...baseInput,
+            slug: formData.slug || generateSlug(formData.title.en || formData.title.mn || "rally"),
+            impactOverview: { en: "", mn: "" },
+            conservationActivities: { en: "", mn: "" },
+            rangerPartnerships: { en: "", mn: "" },
+          };
 
       if (mode === "edit" && rallyId) {
         await updateRally({
@@ -183,14 +183,10 @@ export function RallyForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Rally Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rally Information</CardTitle>
-          <CardDescription>
-            {isReadOnly ? "Rally details" : "Add rally details"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <FormSection
+        title="Rally Information"
+        description={isReadOnly ? "Rally details" : "Add rally details"}
+      >
           <div className="space-y-2">
             <Label htmlFor={`title-${language}`}>Title *</Label>
             <Input
@@ -305,15 +301,10 @@ export function RallyForm({
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </FormSection>
 
       {/* Dates */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Dates & Schedule</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <FormSection title="Dates & Schedule">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="startDate">Start Date *</Label>
@@ -365,154 +356,134 @@ export function RallyForm({
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </FormSection>
 
       {/* Participants */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Participants</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="maxParticipants">Maximum Participants</Label>
-            <Input
-              id="maxParticipants"
-              type="number"
-              min="0"
-              value={formData.maxParticipants}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  maxParticipants: parseInt(e.target.value) || 0,
-                }))
-              }
-              placeholder="Leave empty for unlimited"
-              disabled={isReadOnly}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <FormSection title="Participants">
+        <div className="space-y-2">
+          <Label htmlFor="maxParticipants">Maximum Participants</Label>
+          <Input
+            id="maxParticipants"
+            type="number"
+            min="0"
+            value={formData.maxParticipants}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                maxParticipants: parseInt(e.target.value) || 0,
+              }))
+            }
+            placeholder="Leave empty for unlimited"
+            disabled={isReadOnly}
+          />
+        </div>
+      </FormSection>
 
       {/* Hero Image */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Hero Image</CardTitle>
-          <CardDescription>
-            {isReadOnly
-              ? "Rally hero image"
-              : mode === "edit"
-              ? "Update rally image (leave empty to keep current image)"
-              : "Image will be uploaded when you save the rally"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isReadOnly && initialData?.heroImage ? (
-            <div className="relative w-full max-w-xs aspect-video overflow-hidden rounded-lg border bg-muted">
-              <img
-                src={initialData.heroImage}
-                alt={typeof initialData.title === "string" ? initialData.title : initialData.title?.en || "Rally"}
-                className="object-cover w-full h-full"
-              />
-            </div>
-          ) : !isReadOnly ? (
-            <SingleImageUpload
-              ref={heroImageRef}
-              onFileSelect={setHeroImageFile}
-              initialUrl={initialData?.heroImage}
+      <FormSection
+        title="Hero Image"
+        description={
+          isReadOnly
+            ? "Rally hero image"
+            : mode === "edit"
+            ? "Update rally image (leave empty to keep current image)"
+            : "Image will be uploaded when you save the rally"
+        }
+      >
+        {isReadOnly && initialData?.heroImage ? (
+          <div className="relative w-full max-w-xs aspect-video overflow-hidden rounded-lg border bg-muted">
+            <img
+              src={initialData.heroImage}
+              alt={typeof initialData.title === "string" ? initialData.title : initialData.title?.en || "Rally"}
+              className="object-cover w-full h-full"
             />
-          ) : (
-            <div className="text-sm text-muted-foreground">No image</div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        ) : !isReadOnly ? (
+          <SingleImageUpload
+            ref={heroImageRef}
+            onFileSelect={setHeroImageFile}
+            initialUrl={initialData?.heroImage}
+          />
+        ) : (
+          <div className="text-sm text-muted-foreground">No image</div>
+        )}
+      </FormSection>
 
       {/* Hero Video URL */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Hero Video</CardTitle>
-          <CardDescription>
-            Add a video URL (YouTube, Vimeo, etc.)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="heroVideo">Video URL</Label>
-            <Input
-              id="heroVideo"
-              type="url"
-              value={formData.heroVideo}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, heroVideo: e.target.value }))
-              }
-              placeholder="https://www.youtube.com/watch?v=..."
-              disabled={isReadOnly}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <FormSection title="Hero Video" description="Add a video URL (YouTube, Vimeo, etc.)">
+        <div className="space-y-2">
+          <Label htmlFor="heroVideo">Video URL</Label>
+          <Input
+            id="heroVideo"
+            type="url"
+            value={formData.heroVideo}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, heroVideo: e.target.value }))
+            }
+            placeholder="https://www.youtube.com/watch?v=..."
+            disabled={isReadOnly}
+          />
+        </div>
+      </FormSection>
 
       {/* Rally Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Rally Settings</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, status: value }))
-              }
-            >
-              <SelectTrigger id="status">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="DRAFT">Draft</SelectItem>
-                <SelectItem value="UPCOMING">Upcoming</SelectItem>
-                <SelectItem value="ONGOING">Ongoing</SelectItem>
-                <SelectItem value="COMPLETED">Completed</SelectItem>
-                <SelectItem value="CANCELLED">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <FormSection title="Rally Settings">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={formData.status}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, status: value }))
+            }
+          >
+            <SelectTrigger id="status">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="DRAFT">Draft</SelectItem>
+              <SelectItem value="UPCOMING">Upcoming</SelectItem>
+              <SelectItem value="ONGOING">Ongoing</SelectItem>
+              <SelectItem value="COMPLETED">Completed</SelectItem>
+              <SelectItem value="CANCELLED">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="isRecruiting">Open for Applications</Label>
-              <p className="text-sm text-muted-foreground">
-                Allow users to apply for this rally
-              </p>
-            </div>
-            <Switch
-              id="isRecruiting"
-              checked={formData.isRecruiting}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, isRecruiting: checked }))
-              }
-              disabled={isReadOnly}
-            />
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label htmlFor="isRecruiting">Open for Applications</Label>
+            <p className="text-sm text-muted-foreground">
+              Allow users to apply for this rally
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <Switch
+            id="isRecruiting"
+            checked={formData.isRecruiting}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({ ...prev, isRecruiting: checked }))
+            }
+            disabled={isReadOnly}
+          />
+        </div>
+      </FormSection>
 
       {/* Form Actions */}
-      <div className="flex items-center justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.back()}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <Save className="mr-2 h-4 w-4" />
-          {mode === "create" ? "Create Rally" : "Update Rally"}
-        </Button>
+      <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center gap-3 py-4">
+          <Button type="submit" disabled={isSubmitting} className="min-w-[160px]">
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Save className="mr-2 h-4 w-4" />
+            {mode === "create" ? "Create Rally" : "Update Rally"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     </form>
   );

@@ -10,6 +10,18 @@ export const GET_ME = gql`
       isActive
       createdAt
       updatedAt
+      tenant {
+        id
+        slug
+        name
+      }
+      roles {
+        id
+        role {
+          id
+          name
+        }
+      }
     }
   }
 `

@@ -39,30 +39,17 @@ export function CommandMenu() {
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
         <CommandGroup heading="Navigation">
-          <CommandItem onSelect={() => runCommand(() => router.push('/'))}>
-            Dashboard
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/news'))}>
-            News
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/merch'))}>
-            Merchandise
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/users'))}>
-            Users
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/tasks'))}>
-            Tasks
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/apps'))}>
-            Apps
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/chats'))}>
-            Chats
-          </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => router.push('/settings'))}>
-            Settings
-          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/'))}>Dashboard</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/rallies'))}>Rallies</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/applications'))}>Applications</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/nominations'))}>Nominations</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/rangers'))}>Rangers</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/contact'))}>Contact</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/team'))}>Team</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/news'))}>News</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/merch'))}>Merchandise</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/tenants'))}>Tenants</CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/users'))}>Users</CommandItem>
         </CommandGroup>
       </CommandList>
     </CommandDialog>

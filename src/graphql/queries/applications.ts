@@ -1,17 +1,19 @@
 import { gql } from '@apollo/client'
+import { PAGINATION_FIELDS } from '../fragments/pagination'
 
 export const GET_APPLICATIONS = gql`
+  ${PAGINATION_FIELDS}
   query GetApplications(
     $status: ApplicationStatus
     $rallyId: ID
     $limit: Int
-    $offset: Int
+    $page: Int
   ) {
-    applications(
+    getApplications(
       status: $status
       rallyId: $rallyId
       limit: $limit
-      offset: $offset
+      page: $page
     ) {
       applications {
         id
@@ -55,12 +57,7 @@ export const GET_APPLICATIONS = gql`
         updatedAt
       }
       pagination {
-        total
-        totalPages
-        currentPage
-        perPage
-        hasNextPage
-        hasPreviousPage
+        ...PaginationFields
       }
     }
   }
@@ -68,7 +65,7 @@ export const GET_APPLICATIONS = gql`
 
 export const GET_APPLICATION = gql`
   query GetApplication($id: ID!) {
-    applicationById(id: $id) {
+    getApplication(id: $id) {
       id
       rally {
         id
@@ -117,15 +114,16 @@ export const GET_APPLICATION = gql`
 
 export const GET_APPLICATION_STATS = gql`
   query GetApplicationStats {
-    applicationStats {
-      total
-      pending
-      underReview
-      approved
-      waitlisted
-      rejected
-      cancelled
-      confirmed
+    getApplicationStats {
+      totalApplications
+      pendingApplications
+      approvedApplications
+      rejectedApplications
+      waitlistedApplications
+      confirmedApplications
+      riderCount
+      supporterCount
+      totalRaising
     }
   }
 `

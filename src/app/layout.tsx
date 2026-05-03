@@ -28,7 +28,7 @@ export default function RootLayout({
             </AuthProvider>
           </ApolloProvider>
         </ThemeProvider>
-        <Toaster />
+        <Toaster position="top-right" />
       </body>
     </html>
   );

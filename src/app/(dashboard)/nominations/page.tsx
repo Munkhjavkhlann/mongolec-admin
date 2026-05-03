@@ -2,16 +2,9 @@
 
 import { useState } from 'react'
 import { useQuery } from '@apollo/client/react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MapPin, Loader2, Search } from 'lucide-react'
+import { MapPin, Search } from 'lucide-react'
 import { NominationsTable } from '@/features/nominations/components/nominations-table'
 import { GET_NOMINATIONS, GET_NOMINATION_STATS } from '@/graphql/queries/nominations'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -23,16 +16,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PageHeader, StatBar, EmptyState } from '@/components/admin'
 
 interface GetNominationsData {
-  nominations: {
+  getNominations: {
     nominations: any[]
     pagination: any
   }
 }
 
 interface GetNominationStatsData {
-  nominationStats: {
+  getNominationStats: {
     total: number
     pending: number
     underReview: number
@@ -43,265 +37,131 @@ interface GetNominationStatsData {
   }
 }
 
+const STATUS_TABS = [
+  { value: 'all', label: 'All', filter: undefined },
+  { value: 'pending', label: 'Pending', filter: 'PENDING' },
+  { value: 'under_review', label: 'Under Review', filter: 'UNDER_REVIEW' },
+  { value: 'approved', label: 'Approved', filter: 'APPROVED' },
+  { value: 'rejected', label: 'Rejected', filter: 'REJECTED' },
+  { value: 'selected', label: 'Selected', filter: 'SELECTED' },
+]
+
+const COUNTRIES = ['Mongolia', 'Russia', 'China', 'Kazakhstan', 'Kyrgyzstan']
+
+const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
+  if (!field) return ''
+  if (typeof field === 'string') return field
+  return field.en || field.mn || ''
+}
+
 export default function NominationsPage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState('all')
   const [countryFilter, setCountryFilter] = useState<string | undefined>(undefined)
   const [searchQuery, setSearchQuery] = useState('')
 
+  const activeFilter = STATUS_TABS.find(t => t.value === activeTab)?.filter
+
   const { data: statsData, loading: statsLoading } = useQuery<GetNominationStatsData>(
     GET_NOMINATION_STATS,
-    {
-      fetchPolicy: 'cache-and-network',
-    }
+    { fetchPolicy: 'cache-and-network' }
   )
 
   const { data, loading, error, refetch } = useQuery<GetNominationsData>(GET_NOMINATIONS, {
-    variables: {
-      status: statusFilter,
-      country: countryFilter,
-      limit: 100,
-      offset: 0,
-    },
+    variables: { status: activeFilter, country: countryFilter, limit: 100, page: 1 },
     fetchPolicy: 'cache-and-network',
   })
 
-  const nominations = data?.nominations?.nominations || []
-  const stats = statsData?.nominationStats || {
-    total: 0,
-    pending: 0,
-    underReview: 0,
-    approved: 0,
-    rejected: 0,
-    selected: 0,
-    notSelected: 0,
-  }
+  const nominations = data?.getNominations?.nominations ?? []
+  const s = statsData?.getNominationStats
 
-  // Common countries for filter
-  const countries = ['Mongolia', 'Russia', 'China', 'Kazakhstan', 'Kyrgyzstan']
-
-  // Helper function to get display name from JSON field
-  const getDisplayName = (field: string | { en: string; mn: string } | undefined): string => {
-    if (!field) return ''
-    if (typeof field === 'string') return field
-    return field.en || field.mn || ''
-  }
-
-  // Filter nominations by search query
   const filteredNominations = nominations.filter((nomination: any) => {
     if (!searchQuery) return true
-    const query = searchQuery.toLowerCase()
-    const parkNames = getDisplayName(nomination.parkNames).toLowerCase()
-    const partner = nomination.partnerOrganizationName?.toLowerCase() || ''
-    const country = nomination.country.toLowerCase()
-
+    const q = searchQuery.toLowerCase()
     return (
-      parkNames.includes(query) ||
-      partner.includes(query) ||
-      country.includes(query)
+      getDisplayName(nomination.parkNames).toLowerCase().includes(q) ||
+      (nomination.partnerOrganizationName?.toLowerCase() ?? '').includes(q) ||
+      nomination.country.toLowerCase().includes(q)
     )
   })
 
+  const stats = [
+    { label: 'Total', value: statsLoading ? '—' : (s?.total ?? 0) },
+    { label: 'Pending', value: statsLoading ? '—' : ((s?.pending ?? 0) + (s?.underReview ?? 0)), accent: 'amber' as const },
+    { label: 'Approved', value: statsLoading ? '—' : (s?.approved ?? 0), accent: 'green' as const },
+    { label: 'Selected', value: statsLoading ? '—' : (s?.selected ?? 0), accent: 'blue' as const },
+    { label: 'Rejected', value: statsLoading ? '—' : ((s?.rejected ?? 0) + (s?.notSelected ?? 0)), accent: 'red' as const },
+  ]
+
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Nominations</h1>
-          <p className="text-muted-foreground">
-            Review and manage park nominations
-          </p>
-        </div>
-      </div>
+    <div className="space-y-5 p-6">
+      <PageHeader
+        title="Nominations"
+        description="Review and manage park nominations"
+      />
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Nominations</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">All nominations</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <StatBar stats={stats} loading={statsLoading} />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Review</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.pending + stats.underReview}</div>
-                <p className="text-xs text-muted-foreground">Awaiting review</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Approved</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.approved}</div>
-                <p className="text-xs text-muted-foreground">{stats.selected} selected</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rejected</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {statsLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.rejected + stats.notSelected}</div>
-                <p className="text-xs text-muted-foreground">Not accepted</p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Error State */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load nominations: {error.message}
-          </AlertDescription>
+          <AlertDescription>Failed to load nominations: {error.message}</AlertDescription>
         </Alert>
       )}
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="all" onClick={() => setStatusFilter(undefined)}>
-              All
-            </TabsTrigger>
-            <TabsTrigger value="pending" onClick={() => setStatusFilter('PENDING')}>
-              Pending
-            </TabsTrigger>
-            <TabsTrigger value="under_review" onClick={() => setStatusFilter('UNDER_REVIEW')}>
-              Under Review
-            </TabsTrigger>
-            <TabsTrigger value="approved" onClick={() => setStatusFilter('APPROVED')}>
-              Approved
-            </TabsTrigger>
-            <TabsTrigger value="rejected" onClick={() => setStatusFilter('REJECTED')}>
-              Rejected
-            </TabsTrigger>
-            <TabsTrigger value="selected" onClick={() => setStatusFilter('SELECTED')}>
-              Selected
-            </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <TabsList className="h-9">
+            {STATUS_TABS.map(tab => (
+              <TabsTrigger key={tab.value} value={tab.value} className="text-xs px-4">
+                {tab.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
-          <div className="flex gap-2">
-            {/* Country Filter */}
-            <Select value={countryFilter ?? ''} onValueChange={(v) => setCountryFilter(v || undefined)}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by country" />
+          <div className="flex gap-2 shrink-0">
+            <Select value={countryFilter ?? 'all'} onValueChange={(v) => setCountryFilter(v === 'all' ? undefined : v)}>
+              <SelectTrigger className="h-9 w-[160px] text-xs">
+                <SelectValue placeholder="All Countries" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Countries</SelectItem>
-                {countries.map((country) => (
-                  <SelectItem key={country} value={country}>
-                    {country}
-                  </SelectItem>
+                <SelectItem value="all">All Countries</SelectItem>
+                {COUNTRIES.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {/* Search */}
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search nominations..."
+                placeholder="Search nominations…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 w-[250px]"
+                className="pl-8 h-9 w-[200px] text-xs"
               />
             </div>
           </div>
         </div>
 
-        <TabsContent value="all" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">Loading nominations...</span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <NominationsTable
-              nominations={filteredNominations}
-              loading={loading}
-              onActionComplete={() => refetch()}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="pending" className="space-y-4">
-          <NominationsTable
-            nominations={filteredNominations}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="under_review" className="space-y-4">
-          <NominationsTable
-            nominations={filteredNominations}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="approved" className="space-y-4">
-          <NominationsTable
-            nominations={filteredNominations}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="rejected" className="space-y-4">
-          <NominationsTable
-            nominations={filteredNominations}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
-
-        <TabsContent value="selected" className="space-y-4">
-          <NominationsTable
-            nominations={filteredNominations}
-            loading={loading}
-            onActionComplete={() => refetch()}
-          />
-        </TabsContent>
+        {STATUS_TABS.map(tab => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-4">
+            {loading ? (
+              <div className="rounded-xl border border-border/60 bg-card">
+                <EmptyState icon={MapPin} title="Loading nominations…" className="py-12" />
+              </div>
+            ) : filteredNominations.length === 0 ? (
+              <div className="rounded-xl border border-border/60 bg-card">
+                <EmptyState icon={MapPin} title="No nominations found" description="Nominations will appear here once submitted." />
+              </div>
+            ) : (
+              <NominationsTable
+                nominations={filteredNominations}
+                loading={loading}
+                onActionComplete={() => refetch()}
+              />
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )

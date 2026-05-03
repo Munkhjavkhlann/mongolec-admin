@@ -9,7 +9,7 @@ export const GET_MERCH_PRODUCTS = gql`
     $limit: Int
     $offset: Int
   ) {
-    merchProducts(
+    getMerchProducts(
       language: $language
       status: $status
       categoryId: $categoryId
@@ -77,7 +77,7 @@ export const GET_MERCH_PRODUCTS = gql`
 
 export const GET_MERCH_PRODUCT_BY_ID = gql`
   query GetMerchProductById($id: ID!, $language: String) {
-    merchProductById(id: $id, language: $language) {
+    getMerchProductById(id: $id, language: $language) {
       id
       sku
       name
@@ -138,7 +138,7 @@ export const GET_MERCH_PRODUCT_BY_ID = gql`
 
 export const GET_MERCH_CATEGORIES = gql`
   query GetMerchCategories($language: String) {
-    merchCategories(language: $language) {
+    getMerchCategories(language: $language) {
       id
       name
       slug
@@ -151,7 +151,7 @@ export const GET_MERCH_CATEGORIES = gql`
 
 export const GET_MERCH_CATEGORY_BY_ID = gql`
   query GetMerchCategoryById($id: ID!, $language: String) {
-    merchCategoryById(id: $id, language: $language) {
+    getMerchCategoryById(id: $id, language: $language) {
       id
       name
       slug

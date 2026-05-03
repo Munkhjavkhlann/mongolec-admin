@@ -1,33 +1,20 @@
 import { gql } from '@apollo/client'
+import { TENANT_FIELDS } from '../fragments/tenant'
 
 export const CREATE_TENANT = gql`
+  ${TENANT_FIELDS}
   mutation CreateTenant($input: CreateTenantInput!) {
     createTenant(input: $input) {
-      id
-      name
-      slug
-      domain
-      isActive
-      status
-      plan
-      createdAt
-      updatedAt
+      ...TenantFields
     }
   }
 `
 
 export const UPDATE_TENANT = gql`
+  ${TENANT_FIELDS}
   mutation UpdateTenant($id: ID!, $input: UpdateTenantInput!) {
     updateTenant(id: $id, input: $input) {
-      id
-      name
-      slug
-      domain
-      isActive
-      status
-      plan
-      createdAt
-      updatedAt
+      ...TenantFields
     }
   }
 `

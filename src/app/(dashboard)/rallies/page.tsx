@@ -1,265 +1,123 @@
-"use client";
+'use client'
 
-import { useQuery } from "@apollo/client/react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Plus, Trophy, Loader2 } from "lucide-react";
-import Link from "next/link";
-import { RalliesTable } from "@/features/rallies/components/rallies-table";
-import { GET_RALLIES } from "@/graphql/queries/rallies";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useState } from 'react'
+import { useQuery } from '@apollo/client/react'
+import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Plus, Trophy } from 'lucide-react'
+import Link from 'next/link'
+import { RalliesTable } from '@/features/rallies/components/rallies-table'
+import { GET_RALLIES } from '@/graphql/queries/rallies'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
+import { PageHeader, StatBar, EmptyState } from '@/components/admin'
 
 interface GetRalliesData {
-  rallies: {
+  getRallies: {
     rallies: any[]
     pagination: any
   }
 }
 
+const STATUS_TABS = [
+  { value: 'all', label: 'All', filter: undefined },
+  { value: 'upcoming', label: 'Upcoming', filter: 'UPCOMING' as const },
+  { value: 'ongoing', label: 'Ongoing', filter: 'ONGOING' as const },
+  { value: 'completed', label: 'Completed', filter: 'COMPLETED' as const },
+  { value: 'draft', label: 'Draft', filter: 'DRAFT' as const },
+]
+
 export default function RalliesPage() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [activeTab, setActiveTab] = useState('all')
+
+  const activeFilter = STATUS_TABS.find(t => t.value === activeTab)?.filter
 
   const { data, loading, error } = useQuery<GetRalliesData>(GET_RALLIES, {
-    variables: {
-      language: "en",
-      status: statusFilter,
-      limit: 100,
-      offset: 0,
-    },
-    fetchPolicy: "cache-and-network",
-  });
+    variables: { status: activeFilter, limit: 100, page: 1 },
+    fetchPolicy: 'cache-and-network',
+  })
 
-  const rallies = data?.rallies?.rallies || [];
+  const { data: allData, loading: allLoading } = useQuery<GetRalliesData>(GET_RALLIES, {
+    variables: { limit: 1000, page: 1 },
+    fetchPolicy: 'cache-and-network',
+  })
 
-  // Calculate stats
-  const stats = {
-    total: rallies.length,
-    upcoming: rallies.filter((r: any) => r.status === "UPCOMING").length,
-    ongoing: rallies.filter((r: any) => r.status === "ONGOING").length,
-    recruiting: rallies.filter((r: any) => r.isRecruiting).length,
-  };
+  const rallies = data?.getRallies?.rallies ?? []
+  const allRallies = allData?.getRallies?.rallies ?? []
+
+  const stats = [
+    { label: 'Total', value: allLoading ? '—' : allRallies.length },
+    { label: 'Upcoming', value: allLoading ? '—' : allRallies.filter((r: any) => r.status === 'UPCOMING').length, accent: 'blue' as const },
+    { label: 'Ongoing', value: allLoading ? '—' : allRallies.filter((r: any) => r.status === 'ONGOING').length, accent: 'green' as const },
+    { label: 'Recruiting', value: allLoading ? '—' : allRallies.filter((r: any) => r.isRecruiting).length, accent: 'primary' as const },
+    { label: 'Completed', value: allLoading ? '—' : allRallies.filter((r: any) => r.status === 'COMPLETED').length },
+  ]
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Rallies</h1>
-          <p className="text-muted-foreground">
-            Manage rallies, applications, and events
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild>
+    <div className="space-y-5 p-6">
+      <PageHeader
+        title="Rallies"
+        description="Manage rallies, dates, and participation"
+        actions={
+          <Button size="sm" asChild>
             <Link href="/rallies/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Create Rally
+              <Plus className="h-4 w-4 mr-1.5" />
+              New Rally
             </Link>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Rallies</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <p className="text-xs text-muted-foreground">
-                  All rallies
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      <StatBar stats={stats} loading={allLoading} />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.upcoming}</div>
-                <p className="text-xs text-muted-foreground">
-                  Scheduled rallies
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ongoing</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.ongoing}</div>
-                <p className="text-xs text-muted-foreground">
-                  Currently active
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recruiting</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">{stats.recruiting}</div>
-                <p className="text-xs text-muted-foreground">
-                  Open for applications
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Error State */}
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Failed to load rallies: {error.message}
-          </AlertDescription>
+          <AlertDescription>Failed to load rallies: {error.message}</AlertDescription>
         </Alert>
       )}
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="all" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="all" onClick={() => setStatusFilter(undefined)}>
-              All
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="h-9">
+          {STATUS_TABS.map(tab => (
+            <TabsTrigger key={tab.value} value={tab.value} className="text-xs px-4">
+              {tab.label}
             </TabsTrigger>
-            <TabsTrigger value="upcoming" onClick={() => setStatusFilter("UPCOMING")}>
-              Upcoming
-            </TabsTrigger>
-            <TabsTrigger value="ongoing" onClick={() => setStatusFilter("ONGOING")}>
-              Ongoing
-            </TabsTrigger>
-            <TabsTrigger value="completed" onClick={() => setStatusFilter("COMPLETED")}>
-              Completed
-            </TabsTrigger>
-            <TabsTrigger value="draft" onClick={() => setStatusFilter("DRAFT")}>
-              Draft
-            </TabsTrigger>
-          </TabsList>
-        </div>
+          ))}
+        </TabsList>
 
-        <TabsContent value="all" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">
-                    Loading rallies...
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <RalliesTable rallies={rallies} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="upcoming" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">
-                    Loading rallies...
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <RalliesTable rallies={rallies} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="ongoing" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">
-                    Loading rallies...
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <RalliesTable rallies={rallies} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="completed" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">
-                    Loading rallies...
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <RalliesTable rallies={rallies} />
-          )}
-        </TabsContent>
-
-        <TabsContent value="draft" className="space-y-4">
-          {loading ? (
-            <Card>
-              <CardContent className="py-8">
-                <div className="flex items-center justify-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                  <span className="ml-2 text-muted-foreground">
-                    Loading rallies...
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <RalliesTable rallies={rallies} />
-          )}
-        </TabsContent>
+        {STATUS_TABS.map(tab => (
+          <TabsContent key={tab.value} value={tab.value} className="mt-4">
+            {loading ? (
+              <div className="rounded-xl border border-border/60 bg-card">
+                <EmptyState
+                  icon={Trophy}
+                  title="Loading rallies…"
+                  className="py-12"
+                />
+              </div>
+            ) : rallies.length === 0 ? (
+              <div className="rounded-xl border border-border/60 bg-card">
+                <EmptyState
+                  icon={Trophy}
+                  title="No rallies found"
+                  description="Create a new rally to get started."
+                  action={
+                    <Button size="sm" asChild>
+                      <Link href="/rallies/create">
+                        <Plus className="h-4 w-4 mr-1.5" />
+                        New Rally
+                      </Link>
+                    </Button>
+                  }
+                />
+              </div>
+            ) : (
+              <RalliesTable rallies={rallies} />
+            )}
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
-  );
+  )
 }

@@ -1,33 +1,35 @@
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  CaretSortIcon,
-  EyeNoneIcon,
-} from '@radix-ui/react-icons'
-import { type Column } from '@tanstack/react-table'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import React from 'react'
+import { Column } from '@tanstack/react-table'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  MoreVertical,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-type DataTableColumnHeaderProps<TData, TValue> =
-  React.HTMLAttributes<HTMLDivElement> & {
-    column: Column<TData, TValue>
-    title: string
-  }
+interface DataTableColumnHeaderProps<TData, TValue>
+  extends React.HTMLAttributes<HTMLDivElement> {
+  column: Column<TData, TValue>
+  title: string
+  sortable?: boolean
+}
 
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,
+  sortable = true,
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
-  if (!column.getCanSort()) {
-    return <div className={cn(className)}>{title}</div>
+  if (!sortable) {
+    return <div className={cn('flex items-center', className)}>{title}</div>
   }
 
   return (
@@ -35,40 +37,44 @@ export function DataTableColumnHeader<TData, TValue>({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant='ghost'
-            size='sm'
-            className='data-[state=open]:bg-accent -ms-3 h-8'
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-transparent"
           >
-            <span>{title}</span>
-            {column.getIsSorted() === 'desc' ? (
-              <ArrowDownIcon className='ms-2 h-4 w-4' />
-            ) : column.getIsSorted() === 'asc' ? (
-              <ArrowUpIcon className='ms-2 h-4 w-4' />
-            ) : (
-              <CaretSortIcon className='ms-2 h-4 w-4' />
+            {column.getIsSorted() === 'desc' && (
+              <ArrowDown className="h-4 w-4" />
+            )}
+            {column.getIsSorted() === 'asc' && <ArrowUp className="h-4 w-4" />}
+            {!column.getIsSorted() && (
+              <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
             )}
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='start'>
-          <DropdownMenuItem onClick={() => column.toggleSorting(false)}>
-            <ArrowUpIcon className='text-muted-foreground/70 size-3.5' />
-            Asc
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem
+            onClick={() => column.toggleSorting(false)}
+            className="flex items-center gap-2"
+          >
+            <ArrowUp className="h-3.5 w-3.5" />
+            Өсөх дарааллаар
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => column.toggleSorting(true)}>
-            <ArrowDownIcon className='text-muted-foreground/70 size-3.5' />
-            Desc
+          <DropdownMenuItem
+            onClick={() => column.toggleSorting(true)}
+            className="flex items-center gap-2"
+          >
+            <ArrowDown className="h-3.5 w-3.5" />
+            Буурах дарааллаар
           </DropdownMenuItem>
-          {column.getCanHide() && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => column.toggleVisibility(false)}>
-                <EyeNoneIcon className='text-muted-foreground/70 size-3.5' />
-                Hide
-              </DropdownMenuItem>
-            </>
-          )}
+          <DropdownMenuItem
+            onClick={() => column.clearSorting()}
+            className="flex items-center gap-2"
+          >
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            Цуцлах
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <span className="truncate">{title}</span>
     </div>
   )
 }

@@ -1,85 +1,126 @@
-import { Cross2Icon } from '@radix-ui/react-icons'
-import { type Table } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { DataTableFacetedFilter } from './faceted-filter'
-import { DataTableViewOptions } from './view-options'
+'use client'
 
-type DataTableToolbarProps<TData> = {
+import React, { useRef, useCallback } from 'react'
+import { Table } from '@tanstack/react-table'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { SimpleFilter } from './simple-filter'
+import { DataTableViewOptions } from './view-options'
+import { X, Search } from 'lucide-react'
+import type { DataTableFilterField } from './filter-list'
+
+export type VirtualFilterValue =
+  | string
+  | string[]
+  | boolean
+  | number
+  | { from: Date; to: Date }
+  | null
+  | undefined
+
+export type { DataTableFilterField }
+
+interface DataTableToolbarProps<TData> {
   table: Table<TData>
   searchPlaceholder?: string
-  searchKey?: string
-  filters?: {
-    columnId: string
-    title: string
-    options: {
-      label: string
-      value: string
-      icon?: React.ComponentType<{ className?: string }>
-    }[]
-  }[]
+  filters?: DataTableFilterField[]
+  searchValue?: string
+  onSearchChange?: (value: string) => void
+  customButton?: React.ReactNode
+  enableView?: boolean
+  enableFilter?: boolean
+  filterTop?: boolean
+  virtualFilterValues?: Record<string, VirtualFilterValue>
+  onVirtualFilterChange?: (filterId: string, value: VirtualFilterValue) => void
+  onClearAllVirtualFilters?: () => void
 }
 
 export function DataTableToolbar<TData>({
   table,
-  searchPlaceholder = 'Filter...',
-  searchKey,
+  searchPlaceholder = 'Search...',
   filters = [],
+  searchValue = '',
+  onSearchChange,
+  customButton,
+  enableView = true,
+  enableFilter = true,
 }: DataTableToolbarProps<TData>) {
-  const isFiltered =
-    table.getState().columnFilters.length > 0 || table.getState().globalFilter
+  const searchTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const activeFiltersCount = filters.filter(
+    (f) => table.getColumn(f.columnId)?.getFilterValue?.()
+  ).length
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current)
+      }
+
+      searchTimerRef.current = setTimeout(() => {
+        onSearchChange?.(value)
+      }, 300)
+    },
+    [onSearchChange]
+  )
+
+  const handleClearAllFilters = useCallback(() => {
+    filters.forEach((filter) => {
+      const column = table.getColumn(filter.columnId)
+      if (column) {
+        column.setFilterValue(undefined)
+      }
+    })
+    onSearchChange?.('')
+  }, [filters, table, onSearchChange])
 
   return (
-    <div className='flex items-center justify-between'>
-      <div className='flex flex-1 flex-col-reverse items-start gap-y-2 sm:flex-row sm:items-center sm:space-x-2'>
-        {searchKey ? (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-1 items-center space-x-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
-            value={
-              (table.getColumn(searchKey)?.getFilterValue() as string) ?? ''
-            }
-            onChange={(event) =>
-              table.getColumn(searchKey)?.setFilterValue(event.target.value)
-            }
-            className='h-8 w-[150px] lg:w-[250px]'
+            value={searchValue}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="h-8 w-full sm:max-w-xs"
           />
-        ) : (
-          <Input
-            placeholder={searchPlaceholder}
-            value={table.getState().globalFilter ?? ''}
-            onChange={(event) => table.setGlobalFilter(event.target.value)}
-            className='h-8 w-[150px] lg:w-[250px]'
-          />
-        )}
-        <div className='flex gap-x-2'>
-          {filters.map((filter) => {
-            const column = table.getColumn(filter.columnId)
-            if (!column) return null
-            return (
-              <DataTableFacetedFilter
-                key={filter.columnId}
-                column={column}
-                title={filter.title}
-                options={filter.options}
-              />
-            )
-          })}
         </div>
-        {isFiltered && (
-          <Button
-            variant='ghost'
-            onClick={() => {
-              table.resetColumnFilters()
-              table.setGlobalFilter('')
-            }}
-            className='h-8 px-2 lg:px-3'
-          >
-            Reset
-            <Cross2Icon className='ms-2 h-4 w-4' />
-          </Button>
-        )}
+        <div className="flex items-center space-x-2">
+          {customButton}
+          {enableView && <DataTableViewOptions table={table} />}
+        </div>
       </div>
-      <DataTableViewOptions table={table} />
+
+      {enableFilter && filters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {filters.map((filter) => (
+            <SimpleFilter<TData>
+              key={filter.columnId}
+              filter={filter}
+              table={table}
+            />
+          ))}
+
+          {activeFiltersCount > 0 && (
+            <Button
+              variant="ghost"
+              onClick={handleClearAllFilters}
+              className="h-8 px-2 lg:px-3"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Clear
+            </Button>
+          )}
+
+          {activeFiltersCount > 0 && (
+            <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+              {activeFiltersCount} active filter
+              {activeFiltersCount > 1 ? 's' : ''}
+            </Badge>
+          )}
+        </div>
+      )}
     </div>
   )
 }

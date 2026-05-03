@@ -1,4 +1,5 @@
 import { gql } from '@apollo/client'
+import { NOMINATION_REVIEW_FIELDS } from '../fragments/nomination'
 
 export const SUBMIT_PARK_NOMINATION = gql`
   mutation SubmitParkNomination($input: ParkNominationInput!) {
@@ -14,7 +15,7 @@ export const SUBMIT_PARK_NOMINATION = gql`
 
 export const UPDATE_NOMINATION = gql`
   mutation UpdateNomination($id: ID!, $input: UpdateNominationInput!) {
-    updateNomination(id: $id, input: $input) {
+    updateParkNomination(id: $id, data: $input) {
       id
       parkName
       country
@@ -23,45 +24,33 @@ export const UPDATE_NOMINATION = gql`
   }
 `
 
-export const UPDATE_NOMINATION_STATUS = gql`
-  mutation UpdateNominationStatus(
+export const CHANGE_NOMINATION_STATUS = gql`
+  ${NOMINATION_REVIEW_FIELDS}
+  mutation ChangeNominationStatus(
     $id: ID!
     $status: NominationStatus!
     $notes: String
   ) {
-    updateNominationStatus(id: $id, status: $status, notes: $notes) {
-      id
-      status
-      reviewNotes
-      reviewedBy
-      reviewedAt
-      updatedAt
+    changeNominationStatus(id: $id, status: $status, notes: $notes) {
+      ...NominationReviewFields
     }
   }
 `
 
 export const APPROVE_NOMINATION = gql`
+  ${NOMINATION_REVIEW_FIELDS}
   mutation ApproveNomination($id: ID!, $notes: String) {
     approveNomination(id: $id, notes: $notes) {
-      id
-      status
-      reviewNotes
-      reviewedBy
-      reviewedAt
-      updatedAt
+      ...NominationReviewFields
     }
   }
 `
 
 export const REJECT_NOMINATION = gql`
+  ${NOMINATION_REVIEW_FIELDS}
   mutation RejectNomination($id: ID!, $reason: String!) {
     rejectNomination(id: $id, reason: $reason) {
-      id
-      status
-      reviewNotes
-      reviewedBy
-      reviewedAt
-      updatedAt
+      ...NominationReviewFields
     }
   }
 `

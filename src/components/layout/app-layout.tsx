@@ -39,9 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             )}
           >
             <Header fixed>
-              <div className="flex-1">
-                <h1 className="text-lg font-semibold">Mongolec Admin</h1>
-              </div>
+              <div className="flex-1" />
               <div className="flex items-center gap-2">
                 <LayoutSettings />
                 <ThemeSwitch />
