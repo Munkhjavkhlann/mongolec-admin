@@ -69,6 +69,16 @@ export const sidebarData: SidebarData = {
           ],
         },
         {
+          title: "Ranger Profiles",
+          url: "/ranger-profiles",
+          icon: Shield,
+        },
+        {
+          title: "Participant Profiles",
+          url: "/participant-profiles",
+          icon: Users,
+        },
+        {
           title: "Team",
           url: "/team",
           icon: Heart,
