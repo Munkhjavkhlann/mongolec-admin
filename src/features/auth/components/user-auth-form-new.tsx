@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2, LogIn } from 'lucide-react'
 import { toast } from 'sonner'
@@ -55,7 +54,6 @@ export function UserAuthForm({
   ...props
 }: UserAuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
   const [loginMutation] = useMutation<LoginData>(LOGIN, {
     refetchQueries: [{ query: GET_ME }],
     awaitRefetchQueries: true,
@@ -83,7 +81,7 @@ export function UserAuthForm({
       if (loginData?.login?.user) {
         toast.success(`Welcome back, ${loginData.login.user.firstName}!`)
         const targetPath = redirectTo || '/'
-        router.push(targetPath)
+        window.location.href = targetPath
       } else {
         toast.error('Login failed')
       }
