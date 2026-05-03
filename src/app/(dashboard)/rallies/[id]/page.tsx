@@ -8,10 +8,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle, Loader2, Calendar, MapPin, Users, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { GET_RALLY_BY_ID } from '@/graphql/queries/rallies'
+import { GET_APPLICATIONS } from '@/graphql/queries/applications'
 import { PageHeader, FormSection, DetailField } from '@/components/admin'
+import { ApplicationsTable } from '@/features/applications/components/applications-table'
+import type { Application } from '@/features/applications/types'
 
 interface GetRallyByIdData {
   getRally: any
+}
+
+interface GetApplicationsData {
+  getApplications: { applications: Application[] }
 }
 
 const STATUS_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -29,6 +36,11 @@ export default function RallyDetailPage() {
     variables: { id: rallyId },
     skip: !rallyId,
   })
+
+  const { data: appsData, loading: appsLoading, refetch: refetchApps } = useQuery<GetApplicationsData>(
+    GET_APPLICATIONS,
+    { variables: { rallyId, limit: 100 }, skip: !rallyId }
+  )
 
   if (loading) {
     return (
@@ -189,6 +201,14 @@ export default function RallyDetailPage() {
           <DetailField label="Created" value={rally.createdAt ? formatDate(rally.createdAt) : undefined} />
           <DetailField label="Last Updated" value={rally.updatedAt ? formatDate(rally.updatedAt) : undefined} />
         </div>
+      </FormSection>
+
+      <FormSection title={`Applications (${appsData?.getApplications?.applications?.length ?? 0})`}>
+        <ApplicationsTable
+          applications={appsData?.getApplications?.applications ?? []}
+          loading={appsLoading}
+          onActionComplete={() => refetchApps()}
+        />
       </FormSection>
     </div>
   )
