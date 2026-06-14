@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageHeader, EmptyState } from '@/components/admin'
 
 interface GetMerchProductByIdData {
-  merchProductById: any
+  getMerchProductById: any
 }
 
 export default function MerchProductEditPage() {
@@ -31,7 +31,7 @@ export default function MerchProductEditPage() {
     )
   }
 
-  if (error || !data?.merchProductById) {
+  if (error || !data?.getMerchProductById) {
     return (
       <div className="space-y-4 max-w-4xl mx-auto">
         <PageHeader title="Edit Product" backHref="/merch" />
@@ -43,7 +43,7 @@ export default function MerchProductEditPage() {
     )
   }
 
-  const product = data.merchProductById
+  const product = data.getMerchProductById
   const title = typeof product.name === 'string' ? product.name : product.name?.en || 'Edit Product'
 
   return (

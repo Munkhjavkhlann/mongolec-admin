@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import Link from 'next/link'
 
 interface GetMerchProductByIdData {
-  merchProductById: any;
+  getMerchProductById: any;
 }
 
 export default function MerchProductViewPage() {
@@ -37,7 +37,7 @@ export default function MerchProductViewPage() {
     )
   }
 
-  if (error || !data?.merchProductById) {
+  if (error || !data?.getMerchProductById) {
     return (
       <div className="container mx-auto py-6 max-w-5xl">
         <Alert variant="destructive">
@@ -50,7 +50,7 @@ export default function MerchProductViewPage() {
     )
   }
 
-  const product = data.merchProductById
+  const product = data.getMerchProductById
 
   return (
     <div className="container mx-auto py-6 max-w-5xl">

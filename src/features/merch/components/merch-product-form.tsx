@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +26,7 @@ import {
   CREATE_MERCH_PRODUCT,
   UPDATE_MERCH_PRODUCT,
 } from "@/graphql/mutations/merch";
+import { GET_MERCH_CATEGORIES } from "@/graphql/queries/merch";
 import { toast } from "sonner";
 import type { MerchProduct } from "../types";
 
@@ -68,6 +69,10 @@ export function MerchProductForm({
     useMutation(CREATE_MERCH_PRODUCT);
   const [updateProduct, { loading: isUpdating }] =
     useMutation(UPDATE_MERCH_PRODUCT);
+  const { data: categoriesData } = useQuery<{
+    getMerchCategories: Array<{ id: string; name: string | { en?: string; mn?: string }; slug: string }>;
+  }>(GET_MERCH_CATEGORIES, { variables: { language } });
+  const categories = categoriesData?.getMerchCategories ?? [];
   const isSubmitting = isCreating || isUpdating;
   const isReadOnly = mode === "view";
 
@@ -86,6 +91,7 @@ export function MerchProductForm({
     trackInventory: true,
     isFeatured: false,
     hasVariants: false,
+    categoryId: "",
   });
 
   const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
@@ -114,6 +120,7 @@ export function MerchProductForm({
         trackInventory: initialData.trackInventory ?? true,
         isFeatured: initialData.isFeatured ?? false,
         hasVariants: initialData.hasVariants ?? false,
+        categoryId: initialData.category?.id || "",
       });
 
       if (initialData.options) {
@@ -196,6 +203,7 @@ export function MerchProductForm({
         status: formData.status,
         isFeatured: formData.isFeatured,
         featuredImage: featuredImageUrl,
+        categoryId: formData.categoryId || null,
         hasVariants: options.length > 0,
         options:
           options.length > 0
@@ -488,6 +496,32 @@ export function MerchProductForm({
                 <SelectItem value="INACTIVE">Inactive</SelectItem>
                 <SelectItem value="OUT_OF_STOCK">Out of Stock</SelectItem>
                 <SelectItem value="DISCONTINUED">Discontinued</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select
+              value={formData.categoryId || "none"}
+              onValueChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  categoryId: value === "none" ? "" : value,
+                }))
+              }
+              disabled={isReadOnly}
+            >
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No category</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {typeof cat.name === "string" ? cat.name : cat.name?.en || cat.slug}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
