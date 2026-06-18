@@ -90,8 +90,19 @@ export const sidebarData: SidebarData = {
         },
         {
           title: "Merchandise",
-          url: "/merch",
           icon: ShoppingBag,
+          items: [
+            {
+              title: "Products",
+              url: "/merch",
+              icon: ShoppingBag,
+            },
+            {
+              title: "Orders",
+              url: "/merch/orders",
+              icon: ShoppingBag,
+            },
+          ],
         },
         {
           title: "Tenants",
