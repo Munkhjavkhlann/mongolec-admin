@@ -19,6 +19,10 @@ import {
   SingleImageUpload,
   SingleImageUploadRef,
 } from "@/components/single-image-upload";
+import {
+  MultiImageUpload,
+  MultiImageUploadRef,
+} from "@/components/multi-image-upload";
 import { Loader2, Save } from "lucide-react";
 import { FormSection } from "@/components/admin";
 import { VariantBuilder } from "./variant-builder";
@@ -58,6 +62,20 @@ interface MerchProductFormProps {
   initialData?: MerchProduct;
 }
 
+function parseGalleryImages(raw: unknown): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.filter((u) => typeof u === "string");
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter((u) => typeof u === "string");
+    } catch {
+      // not valid JSON — ignore
+    }
+  }
+  return [];
+}
+
 export function MerchProductForm({
   mode = "create",
   language,
@@ -77,6 +95,7 @@ export function MerchProductForm({
   const isReadOnly = mode === "view";
 
   const featuredImageRef = useRef<SingleImageUploadRef>(null);
+  const galleryRef = useRef<MultiImageUploadRef>(null);
 
   const [formData, setFormData] = useState({
     name: { en: "", mn: "" },
@@ -95,6 +114,7 @@ export function MerchProductForm({
   });
 
   const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
+  const [initialGalleryUrls, setInitialGalleryUrls] = useState<string[]>([]);
   const [options, setOptions] = useState<ProductOption[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
 
@@ -122,6 +142,8 @@ export function MerchProductForm({
         hasVariants: initialData.hasVariants ?? false,
         categoryId: initialData.category?.id || "",
       });
+
+      setInitialGalleryUrls(parseGalleryImages(initialData.images));
 
       if (initialData.options) {
         const rawOpts = initialData.options as ProductOption[]
@@ -161,6 +183,12 @@ export function MerchProductForm({
           toast.error("Failed to upload featured image");
           return;
         }
+      }
+
+      // Upload gallery images
+      let galleryImages: string[] = [];
+      if (galleryRef.current) {
+        galleryImages = await galleryRef.current.uploadImages();
       }
 
       // Prepare variant data for GraphQL
@@ -203,6 +231,7 @@ export function MerchProductForm({
         status: formData.status,
         isFeatured: formData.isFeatured,
         featuredImage: featuredImageUrl,
+        images: galleryImages.length > 0 ? galleryImages : null,
         categoryId: formData.categoryId || null,
         hasVariants: options.length > 0,
         options:
@@ -345,6 +374,40 @@ export function MerchProductForm({
           ) : (
             <div className="text-sm text-muted-foreground">No image</div>
           )}
+      </FormSection>
+
+      <FormSection
+        title="Gallery Images"
+        description={
+          isReadOnly
+            ? "Product gallery photos"
+            : "Add additional product photos (front, back, detail views)"
+        }
+      >
+        {isReadOnly ? (
+          initialGalleryUrls.length > 0 ? (
+            <div className="flex flex-wrap gap-3">
+              {initialGalleryUrls.map((url, i) => (
+                <div key={i} className="relative w-24 h-24 flex-shrink-0">
+                  <div className="relative w-full h-full overflow-hidden rounded-lg border bg-muted">
+                    <img
+                      src={url}
+                      alt={`Gallery image ${i + 1}`}
+                      className="object-cover w-full h-full"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No gallery images</div>
+          )
+        ) : (
+          <MultiImageUpload
+            ref={galleryRef}
+            initialUrls={initialGalleryUrls}
+          />
+        )}
       </FormSection>
 
       <FormSection
