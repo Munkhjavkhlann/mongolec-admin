@@ -97,20 +97,26 @@ export function MerchProductForm({
   const featuredImageRef = useRef<SingleImageUploadRef>(null);
   const galleryRef = useRef<MultiImageUploadRef>(null);
 
+  const normalizeLangField = (field: string | { en: string; mn: string } | undefined) => {
+    if (!field) return { en: "", mn: "" };
+    if (typeof field === "string") return { en: field, mn: field };
+    return field;
+  };
+
   const [formData, setFormData] = useState({
-    name: { en: "", mn: "" },
-    description: { en: "", mn: "" },
-    shortDescription: { en: "", mn: "" },
-    price: 0,
-    compareAtPrice: 0,
-    currency: "USD",
-    status: "DRAFT",
-    inventory: 0,
-    minStock: 0,
-    trackInventory: true,
-    isFeatured: false,
-    hasVariants: false,
-    categoryId: "",
+    name: mode !== "create" && initialData ? normalizeLangField(initialData.name) : { en: "", mn: "" },
+    description: mode !== "create" && initialData ? normalizeLangField(initialData.description) : { en: "", mn: "" },
+    shortDescription: mode !== "create" && initialData ? normalizeLangField(initialData.shortDescription) : { en: "", mn: "" },
+    price: mode !== "create" && initialData ? initialData.price || 0 : 0,
+    compareAtPrice: mode !== "create" && initialData ? initialData.compareAtPrice || 0 : 0,
+    currency: mode !== "create" && initialData ? initialData.currency || "USD" : "USD",
+    status: mode !== "create" && initialData ? initialData.status || "DRAFT" : "DRAFT",
+    inventory: mode !== "create" && initialData ? initialData.inventory || 0 : 0,
+    minStock: mode !== "create" && initialData ? initialData.minStock || 0 : 0,
+    trackInventory: mode !== "create" && initialData ? initialData.trackInventory ?? true : true,
+    isFeatured: mode !== "create" && initialData ? initialData.isFeatured ?? false : false,
+    hasVariants: mode !== "create" && initialData ? initialData.hasVariants ?? false : false,
+    categoryId: mode !== "create" && initialData ? initialData.category?.id || "" : "",
   });
 
   const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
@@ -121,12 +127,6 @@ export function MerchProductForm({
   // Initialize form with existing product data
   useEffect(() => {
     if (initialData && mode !== "create") {
-      const normalizeLangField = (field: string | { en: string; mn: string } | undefined) => {
-        if (!field) return { en: "", mn: "" };
-        if (typeof field === "string") return { en: field, mn: field };
-        return field;
-      };
-
       setFormData({
         name: normalizeLangField(initialData.name),
         description: normalizeLangField(initialData.description),
@@ -547,7 +547,7 @@ export function MerchProductForm({
             <Select
               value={formData.status}
               onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, status: value }))
+                setFormData((prev) => ({ ...prev, status: value as "DRAFT" | "ACTIVE" | "INACTIVE" | "OUT_OF_STOCK" | "DISCONTINUED" }))
               }
             >
               <SelectTrigger id="status">
