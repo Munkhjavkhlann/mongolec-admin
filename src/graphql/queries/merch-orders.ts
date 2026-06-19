@@ -12,7 +12,9 @@ export const GET_MERCH_ORDERS = gql`
       address
       notes
       status
+      deliveryMethod
       paymentMethod
+      paymentClaimedAt
       subtotal
       total
       currency
@@ -45,7 +47,9 @@ export const GET_MERCH_ORDER_BY_ID = gql`
       address
       notes
       status
+      deliveryMethod
       paymentMethod
+      paymentClaimedAt
       subtotal
       total
       currency

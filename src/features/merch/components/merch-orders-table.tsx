@@ -56,11 +56,24 @@ function buildColumns(
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const conf = orderStatusConfig[row.original.status]
+        const order = row.original
+        const conf = orderStatusConfig[order.status]
         return (
-          <Badge variant="outline" className={conf?.color ?? ''}>
-            {conf?.label ?? row.original.status}
-          </Badge>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Badge variant="outline" className={conf?.color ?? ''}>
+                {conf?.label ?? order.status}
+              </Badge>
+              {order.paymentClaimedAt && (
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                  Төлбөр төлсөн ✓
+                </Badge>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {order.deliveryMethod === 'PICKUP' ? 'Pickup' : 'Delivery'}
+            </span>
+          </div>
         )
       },
     },

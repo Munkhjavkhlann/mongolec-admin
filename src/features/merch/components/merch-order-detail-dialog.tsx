@@ -76,6 +76,22 @@ export function MerchOrderDetailDialog({
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
+          {/* Payment claimed banner */}
+          {order.paymentClaimedAt && (
+            <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+              <span className="text-green-600 text-lg leading-none">✓</span>
+              <div>
+                <p className="text-sm font-semibold text-green-800">
+                  Customer marked as paid — verify payment
+                </p>
+                <p className="text-xs text-green-700 mt-0.5">
+                  Claimed at:{' '}
+                  {new Date(order.paymentClaimedAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Status update */}
           <div className="space-y-2">
             <Label>Update Status</Label>
@@ -110,6 +126,14 @@ export function MerchOrderDetailDialog({
               <DetailField label="Phone" value={order.phone} />
               <DetailField label="Email" value={order.email} />
               <DetailField label="Payment Method" value={order.paymentMethod} />
+              <DetailField
+                label="Delivery Method"
+                value={
+                  order.deliveryMethod === 'PICKUP'
+                    ? 'Оффисоос авна / Pickup'
+                    : 'Хүргэлт / Delivery'
+                }
+              />
             </div>
           </div>
 

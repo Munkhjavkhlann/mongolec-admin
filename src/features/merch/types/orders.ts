@@ -32,6 +32,8 @@ export interface MerchOrder {
   currency: string
   tenantId?: string
   items: MerchOrderItem[]
+  deliveryMethod: string
+  paymentClaimedAt?: string | null
   createdAt: string
   updatedAt: string
 }
