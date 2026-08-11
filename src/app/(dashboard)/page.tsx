@@ -6,18 +6,18 @@ import {
   MapPin,
   FileText,
   Trophy,
-  Clock,
+  ShoppingBag,
   CheckCircle,
-  XCircle,
   TrendingUp,
   ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { GET_NOMINATION_STATS } from '@/graphql/queries/nominations'
 import { GET_APPLICATION_STATS } from '@/graphql/queries/applications'
 import { GET_RALLIES } from '@/graphql/queries/rallies'
+import { GET_MERCH_ORDERS } from '@/graphql/queries/merch-orders'
+import { type MerchOrder, paidPayment } from '@/features/merch/types/orders'
 
 function StatCard({
   title,
@@ -116,10 +116,26 @@ export default function DashboardPage() {
   const { data: rallyData, loading: rallyLoading } = useQuery<RalliesData>(GET_RALLIES, {
     variables: { status: 'ONGOING', limit: 10 },
   })
+  const { data: ordersData, loading: ordersLoading } = useQuery<{ getMerchOrders: MerchOrder[] }>(
+    GET_MERCH_ORDERS,
+    { variables: { limit: 500 } }
+  )
 
   const nom = nomData?.getNominationStats
   const app = appData?.getApplicationStats
   const activeRallies = rallyData?.getRallies?.rallies?.length ?? 0
+
+  // Merch sales — computed from paid orders.
+  const orders = ordersData?.getMerchOrders ?? []
+  const paidOrders = orders.filter((o) => o.status === 'PAID')
+  const grossSales = paidOrders.reduce((s, o) => s + o.total, 0)
+  const totalFees = paidOrders.reduce((s, o) => s + (paidPayment(o)?.fee ?? 0), 0)
+  const netRevenue = paidOrders.reduce(
+    (s, o) => s + (paidPayment(o)?.netAmount ?? o.total),
+    0
+  )
+  const awaitingCount = orders.filter((o) => o.status === 'AWAITING_PAYMENT').length
+  const mnt = (n: number) => `₮${n.toLocaleString()}`
 
   return (
     <div className="space-y-8 p-6">
@@ -167,6 +183,38 @@ export default function DashboardPage() {
           loading={nomLoading}
         />
       </div>
+
+      {/* Merch sales summary */}
+      <Card className="border border-border/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-emerald-500" />
+            Merch Sales
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {ordersLoading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+              <SalesStat label="Net revenue" value={mnt(netRevenue)} accent />
+              <SalesStat label="Gross sales" value={mnt(grossSales)} />
+              <SalesStat label="QPay fees" value={mnt(totalFees)} />
+              <SalesStat
+                label="Paid orders"
+                value={String(paidOrders.length)}
+                sub={awaitingCount ? `${awaitingCount} awaiting payment` : undefined}
+              />
+            </div>
+          )}
+          <Link
+            href="/merch/orders"
+            className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            View orders <ArrowRight className="h-3 w-3" />
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Status breakdown */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -262,6 +310,28 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+function SalesStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string
+  value: string
+  sub?: string
+  accent?: boolean
+}) {
+  return (
+    <div>
+      <div className={`text-2xl font-bold tracking-tight ${accent ? 'text-emerald-600' : ''}`}>
+        {value}
+      </div>
+      <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+      {sub && <div className="text-[11px] text-amber-600 mt-0.5">{sub}</div>}
     </div>
   )
 }
