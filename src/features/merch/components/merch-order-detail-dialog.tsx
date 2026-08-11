@@ -27,6 +27,7 @@ import {
   orderStatusConfig,
   ORDER_STATUS_OPTIONS,
   type MerchOrderStatus,
+  paidPayment,
 } from '../types/orders'
 
 interface MerchOrderDetailDialogProps {
@@ -76,21 +77,54 @@ export function MerchOrderDetailDialog({
         </DialogHeader>
 
         <div className="space-y-6 pt-2">
-          {/* Payment claimed banner */}
-          {order.paymentClaimedAt && (
-            <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-              <span className="text-green-600 text-lg leading-none">✓</span>
-              <div>
-                <p className="text-sm font-semibold text-green-800">
-                  Customer marked as paid — verify payment
-                </p>
-                <p className="text-xs text-green-700 mt-0.5">
-                  Claimed at:{' '}
-                  {new Date(order.paymentClaimedAt).toLocaleString()}
-                </p>
+          {/* QPay payment details */}
+          {(() => {
+            const pay = paidPayment(order)
+            if (!pay) return null
+            const fmt = (n?: number | null) =>
+              `${(n ?? 0).toLocaleString()} ${pay.currency || order.currency}`
+            const rows: Array<[string, React.ReactNode]> = [
+              ['Paid amount', fmt(pay.paidAmount ?? pay.amount)],
+              ['QPay fee', fmt(pay.fee)],
+              ['Bank / wallet', pay.paymentWallet || '—'],
+              ['Type', pay.paymentType || '—'],
+              ['Paid at', pay.paidAt ? new Date(pay.paidAt).toLocaleString() : '—'],
+              [
+                'QPay payment id',
+                <span key="pid" className="font-mono">
+                  {pay.qpayPaymentId || '—'}
+                </span>,
+              ],
+            ]
+            if (pay.ebarimtCustomerNo) rows.push(['E-barimt no.', pay.ebarimtCustomerNo])
+            return (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-emerald-800">✓ Paid via QPay</p>
+                  {pay.settlementStatus && (
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-100 text-emerald-700 border-emerald-300 text-xs"
+                    >
+                      {pay.settlementStatus}
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-baseline gap-2 border-b border-emerald-200/70 pb-2">
+                  <span className="text-xs text-emerald-700">Net received</span>
+                  <span className="text-lg font-bold text-emerald-800">{fmt(pay.netAmount)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  {rows.map(([label, value]) => (
+                    <div key={label} className="flex flex-col">
+                      <span className="text-emerald-700/70">{label}</span>
+                      <span className="text-emerald-900">{value}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Status update */}
           <div className="space-y-2">
