@@ -30,7 +30,8 @@ import {
   CREATE_MERCH_PRODUCT,
   UPDATE_MERCH_PRODUCT,
 } from "@/graphql/mutations/merch";
-import { GET_MERCH_CATEGORIES } from "@/graphql/queries/merch";
+import { GET_MERCH_CATEGORIES, GET_MERCH_DISCOUNTS } from "@/graphql/queries/merch";
+import { AutocompleteSelectFilter } from "@/components/data-table/autocomplete-select-filter";
 import { toast } from "sonner";
 import type { MerchProduct } from "../types";
 
@@ -118,6 +119,12 @@ export function MerchProductForm({
     hasVariants: mode !== "create" && initialData ? initialData.hasVariants ?? false : false,
     categoryId: mode !== "create" && initialData ? initialData.category?.id || "" : "",
   });
+
+  const [discountIds, setDiscountIds] = useState<string[]>(
+    mode !== "create" && initialData
+      ? ((initialData as any).discounts ?? []).map((d: { id: string }) => d.id)
+      : []
+  );
 
   const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
   const [initialGalleryUrls, setInitialGalleryUrls] = useState<string[]>([]);
@@ -242,6 +249,7 @@ export function MerchProductForm({
               }))
             : null,
         variants: variantsInput.length > 0 ? variantsInput : null,
+        discountIds: discountIds.length > 0 ? discountIds : null,
       };
 
       if (mode === "edit" && productId) {
@@ -602,6 +610,30 @@ export function MerchProductForm({
               }
             />
           </div>
+      </FormSection>
+
+      <FormSection
+        title="Discounts"
+        description="Attach discounts to apply promotional pricing to this product"
+      >
+        <div className="space-y-2">
+          <Label>Applied Discounts</Label>
+          <AutocompleteSelectFilter
+            value={discountIds}
+            onChange={(v) => setDiscountIds(Array.isArray(v) ? v : v ? [v] : [])}
+            customQuery={{
+              query: GET_MERCH_DISCOUNTS,
+              dataPath: "getMerchDiscounts",
+              totalCountPath: "getMerchDiscounts.length",
+              labelField: "name",
+              valueField: "id",
+              searchField: "name",
+              pageSize: 100,
+            }}
+            isMulti
+            placeholder="Search and select discounts…"
+          />
+        </div>
       </FormSection>
 
       <div className="sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
