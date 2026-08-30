@@ -130,6 +130,9 @@ export const GET_MERCH_PRODUCT_BY_ID = gql`
         slug
         description
       }
+      discounts {
+        id
+      }
       createdAt
       updatedAt
     }
@@ -156,6 +159,52 @@ export const GET_MERCH_CATEGORY_BY_ID = gql`
       name
       slug
       description
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_MERCH_DISCOUNTS = gql`
+  query GetMerchDiscounts(
+    $tenantId: ID
+    $tenantSlug: String
+    $isActive: Boolean
+    $limit: Int
+    $offset: Int
+  ) {
+    getMerchDiscounts(
+      tenantId: $tenantId
+      tenantSlug: $tenantSlug
+      isActive: $isActive
+      limit: $limit
+      offset: $offset
+    ) {
+      id
+      name
+      type
+      value
+      startDate
+      endDate
+      isActive
+      productIds
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const GET_MERCH_DISCOUNT_BY_ID = gql`
+  query GetMerchDiscountById($id: ID!) {
+    getMerchDiscountById(id: $id) {
+      id
+      name
+      type
+      value
+      startDate
+      endDate
+      isActive
+      productIds
       createdAt
       updatedAt
     }

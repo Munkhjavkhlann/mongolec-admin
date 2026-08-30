@@ -35,6 +35,21 @@ export interface MerchVariant {
   optionValues?: any[]
 }
 
+export type MerchDiscountType = 'PERCENT' | 'AMOUNT'
+
+export interface MerchDiscount {
+  id: string
+  name: string
+  type: MerchDiscountType
+  value: number
+  startDate: string
+  endDate: string
+  isActive: boolean
+  productIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface MerchCategory {
   id: string
   name: string

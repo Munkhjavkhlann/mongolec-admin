@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle, Plus, Package, ShoppingCart } from 'lucide-react'
+import { AlertCircle, Plus, Package, ShoppingCart, Percent } from 'lucide-react'
 import Link from 'next/link'
 import { MerchProductsTable } from '@/features/merch/components/merch-products-table'
 import { GET_MERCH_PRODUCTS } from '@/graphql/queries/merch'
@@ -55,6 +55,12 @@ export default function MerchPage() {
               <Link href="/merch/categories">
                 <Package className="h-4 w-4 mr-1.5" />
                 Categories
+              </Link>
+            </Button>
+            <Button variant="outline" asChild>
+              <Link href="/merch/discounts">
+                <Percent className="h-4 w-4 mr-1.5" />
+                Discounts
               </Link>
             </Button>
           </div>

@@ -160,6 +160,46 @@ export const DELETE_MERCH_CATEGORY = gql`
   }
 `
 
+export const CREATE_MERCH_DISCOUNT = gql`
+  mutation CreateMerchDiscount($input: CreateMerchDiscountInput!) {
+    createMerchDiscount(input: $input) {
+      id
+      name
+      type
+      value
+      startDate
+      endDate
+      isActive
+      productIds
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const UPDATE_MERCH_DISCOUNT = gql`
+  mutation UpdateMerchDiscount($id: ID!, $input: UpdateMerchDiscountInput!) {
+    updateMerchDiscount(id: $id, input: $input) {
+      id
+      name
+      type
+      value
+      startDate
+      endDate
+      isActive
+      productIds
+      createdAt
+      updatedAt
+    }
+  }
+`
+
+export const DELETE_MERCH_DISCOUNT = gql`
+  mutation DeleteMerchDiscount($id: ID!) {
+    deleteMerchDiscount(id: $id)
+  }
+`
+
 export const CREATE_PRESIGNED_UPLOAD_URL = gql`
   mutation CreatePresignedUploadUrl($fileType: String!) {
     createPresignedUploadUrl(fileType: $fileType) {

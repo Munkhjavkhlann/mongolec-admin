@@ -12,6 +12,7 @@ import {
   Shield,
   Mail,
   Command,
+  Percent,
 } from "lucide-react";
 import { type SidebarData } from "../types";
 
@@ -101,6 +102,16 @@ export const sidebarData: SidebarData = {
               title: "Orders",
               url: "/merch/orders",
               icon: ShoppingBag,
+            },
+            {
+              title: "Categories",
+              url: "/merch/categories",
+              icon: Package,
+            },
+            {
+              title: "Discounts",
+              url: "/merch/discounts",
+              icon: Percent,
             },
           ],
         },
