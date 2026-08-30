@@ -7,6 +7,7 @@ import { AlertCircle, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { MerchOrdersTable } from '@/features/merch/components/merch-orders-table'
+import { OrdersExportButton } from '@/features/merch/components/orders-export-button'
 import { GET_MERCH_ORDERS } from '@/graphql/queries/merch-orders'
 import { PageHeader, StatBar, EmptyState } from '@/components/admin'
 import { orderStatusConfig } from '@/features/merch/types/orders'
@@ -40,12 +41,15 @@ export default function MerchOrdersPage() {
         title="Orders"
         description="View and manage merchandise orders"
         actions={
-          <Button variant="outline" asChild>
-            <Link href="/merch">
-              <ArrowLeft className="h-4 w-4 mr-1.5" />
-              Back to Merch
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <OrdersExportButton orders={orders} />
+            <Button variant="outline" asChild>
+              <Link href="/merch">
+                <ArrowLeft className="h-4 w-4 mr-1.5" />
+                Back to Merch
+              </Link>
+            </Button>
+          </div>
         }
       />
 
